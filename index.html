@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QUERO — Planejador de Viagens</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="sidebar">
+        <header>
+          <h1>QUERO <span>Transporte</span></h1>
+          <p class="subtitle">Planejador de rotas — rede proposta</p>
+        </header>
+
+        <section id="route-form">
+          <div class="input-group">
+            <label for="origin">Origem</label>
+            <div class="autocomplete-wrapper">
+              <input id="origin" type="text" placeholder="Ex: Praça Mauá, Rio de Janeiro" autocomplete="off" />
+              <ul id="origin-suggestions" class="suggestions" hidden></ul>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="destination">Destino</label>
+            <div class="autocomplete-wrapper">
+              <input id="destination" type="text" placeholder="Ex: Aeroporto do Galeão" autocomplete="off" />
+              <ul id="destination-suggestions" class="suggestions" hidden></ul>
+            </div>
+          </div>
+          <button id="plan-btn">Planejar rota</button>
+        </section>
+
+        <section id="params-section">
+          <h2>Parâmetros de simulação</h2>
+          <div class="param">
+            <label for="train-speed">Velocidade máxima <span>(km/h)</span></label>
+            <input id="train-speed" type="number" value="80" min="20" max="200" />
+          </div>
+          <div class="param">
+            <label for="dwell-time">Tempo em estação <span>(s)</span></label>
+            <input id="dwell-time" type="number" value="30" min="10" max="120" />
+          </div>
+          <div class="param">
+            <label for="headway">Frequência (headway) <span>(min)</span></label>
+            <input id="headway" type="number" value="5" min="1" max="30" />
+          </div>
+          <div class="param">
+            <label for="accel">Aceleração / frenagem <span>(m/s²)</span></label>
+            <input id="accel" type="number" value="1.0" min="0.3" max="2.0" step="0.1" />
+          </div>
+          <div class="param">
+            <label for="walk-speed">Velocidade a pé <span>(km/h)</span></label>
+            <input id="walk-speed" type="number" value="5" min="3" max="8" />
+          </div>
+          <div class="param">
+            <label for="transfer-penalty">Penalidade de baldeação <span>(min)</span></label>
+            <input id="transfer-penalty" type="number" value="3" min="0" max="15" />
+          </div>
+        </section>
+
+        <section id="results" hidden>
+          <h2>Resultado</h2>
+          <div id="result-summary"></div>
+          <ol id="result-steps"></ol>
+        </section>
+
+        <section id="status-bar">
+          <span id="status-msg">Carregando rede...</span>
+        </section>
+      </aside>
+
+      <div id="map"></div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

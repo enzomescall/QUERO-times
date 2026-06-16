@@ -1,0 +1,17 @@
+{
+  "name": "quero-times",
+  "version": "0.1.0",
+  "description": "Journey time planner for the QUERO expanded metro network of Rio de Janeiro",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  }
+}

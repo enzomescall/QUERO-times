@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "comment": "Replace this file with the exported GeoJSON from the QUERO umap. Download from the umap layer menu → Export → GeoJSON.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Linha 1 (placeholder)", "color": "#e63946" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-43.1855, -22.9028],
+          [-43.1729, -22.9068],
+          [-43.1609, -22.9100]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Estação Central (placeholder)" },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.1729, -22.9068]
+      }
+    }
+  ]
+}
