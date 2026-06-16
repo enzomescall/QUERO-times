@@ -4,16 +4,20 @@
 
 import L from 'leaflet';
 
-const RIO_CENTER = [-22.9068, -43.1729];
+const RIO_CENTER  = [-22.9068, -43.1729];
 const DEFAULT_ZOOM = 10;
 
 export class MapView {
   constructor(containerId) {
     this.map = L.map(containerId, { zoomControl: true }).setView(RIO_CENTER, DEFAULT_ZOOM);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
+    // CartoDB Positron — flat, minimal, lets the transit network stand out
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
+        '&copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20,
     }).addTo(this.map);
 
     this._networkLayer = L.layerGroup().addTo(this.map);
@@ -21,54 +25,94 @@ export class MapView {
     this._markerLayer  = L.layerGroup().addTo(this.map);
   }
 
-  /** Render the full transit network from GeoJSON.
-   *  `lineColors` is a Map<lineId, hexColor> extracted from station descriptions. */
+  /**
+   * Render the full transit network from GeoJSON.
+   * `lineColors` is a Map<lineId, hexColor> from the network parser.
+   */
   renderNetwork(geojson, lineColors = new Map()) {
     this._networkLayer.clearLayers();
 
     L.geoJSON(geojson, {
       style: feature => {
         const lineId = String(feature.properties?.linha ?? '');
-        const color  = feature.properties?.stroke
-          ?? lineColors.get(lineId)
-          ?? '#0a7a3c';
-        return { color, weight: 3, opacity: 0.85 };
+        const color  = feature.properties?.stroke ?? lineColors.get(lineId) ?? '#0a7a3c';
+        return { color, weight: 3, opacity: 0.8 };
       },
-      pointToLayer: (feature, latlng) =>
-        L.circleMarker(latlng, {
-          radius: 5,
-          fillColor: '#ffffff',
-          color: '#0a7a3c',
-          weight: 2,
+      pointToLayer: (feature, latlng) => {
+        const name    = feature.properties?.name ?? '';
+        const desc    = feature.properties?.description ?? '';
+        const lineId  = String(feature.properties?.linha ?? '');
+        const color   = lineColors.get(lineId) ?? '#0a7a3c';
+
+        const marker = L.circleMarker(latlng, {
+          radius:      5,
+          fillColor:   '#ffffff',
+          color,
+          weight:      2,
           fillOpacity: 1,
-        }).bindTooltip(feature.properties?.name ?? ''),
+          // Slightly larger hit area for touch
+          interactive: true,
+        });
+
+        marker.bindPopup(stationPopupHtml(name, desc), {
+          maxWidth: 220,
+          className: 'quero-popup',
+        });
+
+        if (name) marker.bindTooltip(name, { direction: 'top', offset: [0, -6] });
+
+        return marker;
+      },
     }).addTo(this._networkLayer);
   }
 
-  /** Draw the computed route polyline */
-  renderRoute(pathCoords, lineColor = '#ff6b00') {
+  /**
+   * Render route as per-line colored polylines following actual track geometry.
+   * `segments` is [{lineId, lineColor, coords: [[lat,lng],...]}]
+   */
+  renderRoute(segments) {
     this._routeLayer.clearLayers();
-    if (!pathCoords?.length) return;
+    if (!segments?.length) return;
 
-    L.polyline(pathCoords, {
-      color: lineColor,
-      weight: 6,
-      opacity: 0.9,
-      dashArray: null,
-    }).addTo(this._routeLayer);
+    const allCoords = segments.flatMap(s => s.coords);
 
-    this.map.fitBounds(L.latLngBounds(pathCoords), { padding: [40, 40] });
+    for (const seg of segments) {
+      if (seg.coords.length < 2) continue;
+      // White halo for contrast against background network
+      L.polyline(seg.coords, { color: '#ffffff', weight: 10, opacity: 0.7, interactive: false })
+        .addTo(this._routeLayer);
+      // Actual line color, slightly thicker than network
+      L.polyline(seg.coords, { color: seg.lineColor, weight: 6, opacity: 1.0, interactive: false })
+        .addTo(this._routeLayer);
+    }
+
+    this.map.fitBounds(L.latLngBounds(allCoords), { padding: [48, 48] });
   }
 
-  /** Place origin / destination markers */
+  /** Walk legs rendered as dashed gray lines. */
+  renderWalkLegs(legs) {
+    for (const { from, to } of legs) {
+      L.polyline([from, to], {
+        color:     '#6b7280',
+        weight:    3,
+        dashArray: '6 4',
+        opacity:   0.7,
+        interactive: false,
+      }).addTo(this._routeLayer);
+    }
+  }
+
+  /** Place A / B address markers on the map. */
   setMarkers(origin, destination) {
     this._markerLayer.clearLayers();
 
     const makeIcon = (letter, color) =>
       L.divIcon({
         className: '',
-        html: `<div style="background:${color};color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${letter}</div>`,
-        iconSize: [28, 28],
+        html: `<div style="background:${color};color:#fff;width:28px;height:28px;border-radius:50%;` +
+              `display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;` +
+              `border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${letter}</div>`,
+        iconSize:   [28, 28],
         iconAnchor: [14, 14],
       });
 
@@ -82,17 +126,48 @@ export class MapView {
         .bindPopup(destination.displayName ?? 'Destino')
         .addTo(this._markerLayer);
   }
+}
 
-  /** Show/hide walking lines between address and nearest station */
-  renderWalkLegs(legs) {
-    // legs: [{from: [lat,lng], to: [lat,lng]}]
-    for (const { from, to } of legs) {
-      L.polyline([from, to], {
-        color: '#6b7280',
-        weight: 3,
-        dashArray: '6 4',
-        opacity: 0.7,
-      }).addTo(this._routeLayer);
-    }
+// ── Station popup ──────────────────────────────────────────────────────────
+
+/**
+ * Build popup HTML for a station.
+ * Extracts line badges (with correct bg/fg colors) from the umap description HTML.
+ */
+function stationPopupHtml(name, description) {
+  const badges = parseLineBadges(description);
+
+  const badgesHtml = badges
+    .map(({ label, bg, fg }) =>
+      `<span style="display:inline-block;padding:2px 7px;border-radius:3px;` +
+      `background:${bg};color:${fg};font-size:11px;font-weight:700;margin:2px 2px 0 0">${label}</span>`
+    )
+    .join('');
+
+  return (
+    `<div class="quero-popup-inner">` +
+    `<strong>${name || 'Estação'}</strong>` +
+    (badgesHtml ? `<div style="margin-top:6px">${badgesHtml}</div>` : '') +
+    `</div>`
+  );
+}
+
+/**
+ * Parse `**Linha X**` entries from umap description HTML.
+ * Stops at the "Rotas especiais" section.
+ * Returns [{label: "Linha 1", bg: "#ef9600", fg: "#000000"}]
+ */
+function parseLineBadges(html) {
+  if (!html) return [];
+
+  const [relevantPart] = html.split(/\*\*Rotas especiais\*\*/i);
+
+  const badges = [];
+  // Outer span: background-color. Inner span: color. Then **Linha X**.
+  const re = /background-color\s*:\s*(#[0-9a-fA-F]{3,8})[^<]*<span[^>]+color\s*:\s*(#[0-9a-fA-F]{3,8})[^>]*>\*\*(Linha\s+[\w\d]+)\*\*/g;
+  let m;
+  while ((m = re.exec(relevantPart)) !== null) {
+    badges.push({ bg: m[1], fg: m[2], label: m[3] });
   }
+  return badges;
 }

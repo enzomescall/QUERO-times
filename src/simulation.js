@@ -5,49 +5,64 @@
  *  1. Acceleration phase: 0 → v_max at constant acceleration `a`
  *  2. Cruise at v_max (if segment is long enough)
  *  3. Deceleration phase: v_max → 0 at `a`
- *  4. Dwell time at destination station
  *
  * All time values returned in seconds unless noted.
  */
 
-export function segmentTravelTimeS(distanceM, params) {
-  const { trainSpeedKph, accelMs2 } = params;
-  const vMax = trainSpeedKph / 3.6; // m/s
-
-  // Distance needed to reach v_max and brake to 0
-  const accelDist = (vMax * vMax) / (2 * accelMs2);
-  const totalAccelDist = 2 * accelDist;
-
-  let timeS;
-  if (distanceM <= totalAccelDist) {
-    // Never reaches v_max — triangle profile
-    const peakV = Math.sqrt(distanceM * accelMs2);
-    timeS = 2 * (peakV / accelMs2);
-  } else {
-    const accelTime = vMax / accelMs2;
-    const cruiseDist = distanceM - totalAccelDist;
-    const cruiseTime = cruiseDist / vMax;
-    timeS = 2 * accelTime + cruiseTime;
-  }
-
-  return timeS;
+/** Express lines use lettered identifiers (A–E). */
+export function isExpressLine(lineId) {
+  return /^[A-Ea-e]$/.test(String(lineId));
 }
 
 /**
- * Estimate waiting time at a station given headway.
- * We assume a passenger arrives at a random point in the headway cycle,
- * so expected wait = headway / 2.
+ * Pick the right speed/headway/dwell params for a given line.
+ * Returns a sub-object compatible with `segmentTravelTimeS`.
  */
+export function paramsForLine(lineId, params) {
+  if (isExpressLine(lineId)) {
+    return {
+      trainSpeedKph: params.expressSpeedKph,
+      accelMs2:      params.accelMs2,
+      dwellTimeS:    params.expressDwellTimeS,
+      headwayMin:    params.expressHeadwayMin,
+    };
+  }
+  return {
+    trainSpeedKph: params.trainSpeedKph,
+    accelMs2:      params.accelMs2,
+    dwellTimeS:    params.dwellTimeS,
+    headwayMin:    params.headwayMin,
+  };
+}
+
+export function segmentTravelTimeS(distanceM, lineParams) {
+  const { trainSpeedKph, accelMs2 } = lineParams;
+  const vMax = trainSpeedKph / 3.6; // m/s
+
+  const accelDist    = (vMax * vMax) / (2 * accelMs2);
+  const totalAccelDist = 2 * accelDist;
+
+  if (distanceM <= totalAccelDist) {
+    // Triangle profile — never reaches cruise speed
+    const peakV = Math.sqrt(distanceM * accelMs2);
+    return 2 * (peakV / accelMs2);
+  }
+
+  const accelTime  = vMax / accelMs2;
+  const cruiseTime = (distanceM - totalAccelDist) / vMax;
+  return 2 * accelTime + cruiseTime;
+}
+
+/** Expected wait at a station = headway / 2 (uniform random arrival). */
 export function expectedWaitS(headwayMin) {
   return (headwayMin * 60) / 2;
 }
 
-/** Walking time for a given distance */
 export function walkTimeS(distanceM, walkSpeedKph) {
   return distanceM / (walkSpeedKph / 3.6);
 }
 
-/** Format seconds as "Xh Ymin" or "Ymin Zs" */
+/** Format seconds as "Xh Ymin" or "Ymin Zs". */
 export function formatDuration(totalSeconds) {
   const s = Math.round(totalSeconds);
   const h = Math.floor(s / 3600);

@@ -75,8 +75,59 @@ h2 {
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 0;
+  display: inline;
 }
+
+/* ── Collapsible param groups ── */
+details {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+
+details:last-child { border-bottom: none; }
+
+details summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  margin-bottom: 0;
+}
+
+details summary::-webkit-details-marker { display: none; }
+
+details summary::after {
+  content: '▸';
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+details[open] summary::after { transform: rotate(90deg); }
+
+details[open] summary { margin-bottom: 10px; }
+
+details .param { margin-bottom: 10px; }
+details .param:last-child { margin-bottom: 0; }
+
+.badge-metro,
+.badge-express {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  vertical-align: middle;
+}
+
+.badge-metro   { background: #0a7a3c; color: #fff; }
+.badge-express { background: #7c3aed; color: #fff; }
 
 /* ── Inputs ── */
 .input-group {
@@ -259,4 +310,20 @@ h2 {
   #app { flex-direction: column; }
   #sidebar { width: 100%; min-width: unset; height: 50dvh; }
   #map { height: 50dvh; }
+}
+
+/* ── Leaflet popup overrides ── */
+.quero-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 0;
+}
+
+.quero-popup .leaflet-popup-content {
+  margin: 10px 14px;
+}
+
+.quero-popup-inner strong {
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
 }

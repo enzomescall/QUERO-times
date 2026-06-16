@@ -86,6 +86,8 @@ export class TransitNetwork {
   _processLineSegment(coords, lineId, lineColor) {
     let prevNode = null;
     let accDistM = 0;
+    // Accumulate [lat, lng] waypoints for the current inter-station segment
+    let segCoords = [];
 
     for (let i = 0; i < coords.length; i++) {
       const [lng, lat] = coords[i];
@@ -94,24 +96,27 @@ export class TransitNetwork {
         const [plng, plat] = coords[i - 1];
         accDistM += haversineM(plat, plng, lat, lng);
       }
+      segCoords.push([lat, lng]);
 
       const isEndpoint = i === 0 || i === coords.length - 1;
-
-      // Find a pre-indexed station node near this coordinate
       const nearStation = this._findNearNode(lat, lng, STATION_SNAP_M);
 
       if (isEndpoint || nearStation) {
-        // Use the existing station node or create a terminal node
         const node = nearStation ?? this._getOrCreateNode(lat, lng, null);
         node.lines.add(lineId);
 
         if (prevNode && prevNode.id !== node.id && accDistM > 0) {
-          this.edges.push({ from: prevNode.id, to: node.id, distanceM: accDistM, lineId, lineColor });
-          this.edges.push({ from: node.id, to: prevNode.id, distanceM: accDistM, lineId, lineColor });
+          // Store the actual track geometry on each directed edge
+          const fwdCoords = [...segCoords];
+          const revCoords = [...segCoords].reverse();
+          this.edges.push({ from: prevNode.id, to: node.id, distanceM: accDistM, lineId, lineColor, coords: fwdCoords });
+          this.edges.push({ from: node.id, to: prevNode.id, distanceM: accDistM, lineId, lineColor, coords: revCoords });
         }
 
         prevNode = node;
         accDistM = 0;
+        // The current node is the start of the next segment
+        segCoords = [[lat, lng]];
       }
     }
   }

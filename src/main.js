@@ -100,9 +100,15 @@ wireAutocomplete(destInput, destSugg, r => {
 // ── Params helper ──────────────────────────────────────────────────────────
 function getParams() {
   return {
+    // Regular metro/rail lines (1–12)
     trainSpeedKph:    parseFloat(document.getElementById('train-speed').value),
     dwellTimeS:       parseFloat(document.getElementById('dwell-time').value),
     headwayMin:       parseFloat(document.getElementById('headway').value),
+    // Express lines (A–E)
+    expressSpeedKph:  parseFloat(document.getElementById('express-speed').value),
+    expressDwellTimeS: parseFloat(document.getElementById('express-dwell').value),
+    expressHeadwayMin: parseFloat(document.getElementById('express-headway').value),
+    // Shared
     accelMs2:         parseFloat(document.getElementById('accel').value),
     walkSpeedKph:     parseFloat(document.getElementById('walk-speed').value),
     transferPenaltyS: parseFloat(document.getElementById('transfer-penalty').value) * 60,
@@ -142,7 +148,7 @@ planBtn.addEventListener('click', async () => {
   const totalS      = route.totalTimeS + walkOriginS + walkDestS;
 
   // Render map
-  mapView.renderRoute(route.pathCoords);
+  mapView.renderRoute(route.pathSegments);
   mapView.renderWalkLegs([
     { from: [originPoint.lat, originPoint.lng], to: [oNode.lat, oNode.lng] },
     { from: [dNode.lat, dNode.lng],              to: [destPoint.lat, destPoint.lng] },
