@@ -33,7 +33,8 @@ async function init() {
     const geojson = await res.json();
 
     network = new TransitNetwork().loadGeoJSON(geojson);
-    mapView.renderNetwork(geojson);
+    network.logSummary();
+    mapView.renderNetwork(geojson, network.lineColors);
 
     const nodeCount = network.nodes.size;
     const edgeCount = network.edges.length / 2;

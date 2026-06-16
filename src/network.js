@@ -1,26 +1,36 @@
 /**
- * Parses GeoJSON from the QUERO umap export and builds a weighted graph
- * suitable for Dijkstra routing.
+ * Parses GeoJSON from the QUERO umap export and builds a weighted graph.
  *
- * Assumptions about the GeoJSON structure:
- *  - LineString / MultiLineString features represent rail segments.
- *  - Point features (if present) represent named stations.
- *  - Feature properties may include: name, line, mode, color.
+ * Data structure (from umap export):
+ *  - Point features: stations. `name` = station name, `description` = HTML with
+ *    "**Linha X**" spans for every line served (including express lines A-E).
+ *    The `linha` property is either the line id for single-line stations or "M"
+ *    for multi-line interchange markers — do NOT use it as the authoritative
+ *    line identifier; parse `description` instead.
+ *  - LineString features: track geometry. `linha` = line id ("1"…"12", "A"…"E").
+ *    `stroke` = hex color. `linha-ramal` = branch id for express ramais.
  *
- * If station Points are absent we synthesise nodes at every coordinate
- * that appears as an endpoint of a LineString or at intersections.
+ * Graph building strategy:
+ *  Pass 1 — index all station Points as nodes, extracting line membership from
+ *            the description HTML.
+ *  Pass 2 — walk each LineString coordinate-by-coordinate; whenever a coord is
+ *            within STATION_SNAP_M of an indexed station, emit an edge from the
+ *            last stop-node and reset the accumulator. This splits long lines
+ *            into per-station-pair edges, which is what the router needs.
  */
 
-const SNAP_DISTANCE_M = 50; // coords within this distance are merged into one node
+const STATION_SNAP_M = 300; // station Points vs LineString coords — umap placement can drift
+const NODE_MERGE_M   = 50;  // merge duplicate nodes that are very close together
 
 export class TransitNetwork {
   constructor() {
-    this.nodes = new Map();   // id -> { id, lat, lng, name, lines: Set }
-    this.edges = [];          // { from, to, distanceM, lineId, lineColor }
+    this.nodes = new Map();  // id -> { id, lat, lng, name, lines: Set<string> }
+    this.edges = [];         // { from, to, distanceM, lineId, lineColor }
+    this.lineColors = new Map(); // lineId -> hex color (extracted from description spans)
     this._nextId = 0;
   }
 
-  /** Load and parse a GeoJSON FeatureCollection */
+  /** Load and parse a GeoJSON FeatureCollection. Returns `this`. */
   loadGeoJSON(geojson) {
     const stationFeatures = [];
     const lineFeatures = [];
@@ -31,85 +41,112 @@ export class TransitNetwork {
       else if (t === 'LineString' || t === 'MultiLineString') lineFeatures.push(feature);
     }
 
-    // Index explicit station points first
+    // Pass 1 — station nodes
     for (const f of stationFeatures) {
       const [lng, lat] = f.geometry.coordinates;
-      this._getOrCreateNode(lat, lng, f.properties?.name ?? null, f.properties?.line ?? null);
+      const name = f.properties?.name ?? null;
+      const node = this._getOrCreateNode(lat, lng, name);
+
+      const { lines, colors } = parseDescriptionLines(f.properties?.description ?? '');
+      for (const lineId of lines) node.lines.add(lineId);
+
+      // Collect line colors from station descriptions (span background-color)
+      for (const [lineId, color] of colors) {
+        if (!this.lineColors.has(lineId)) this.lineColors.set(lineId, color);
+      }
     }
 
-    // Build edges from line geometries
+    // Pass 2 — track edges
     for (const f of lineFeatures) {
-      const coords =
-        f.geometry.type === 'LineString'
-          ? [f.geometry.coordinates]
-          : f.geometry.coordinates;
+      const lineId    = String(f.properties?.linha ?? f.properties?.name ?? 'unknown');
+      const lineColor = f.properties?.stroke
+        ?? this.lineColors.get(lineId)
+        ?? '#0a7a3c';
 
-      const lineId = f.properties?.name ?? f.properties?.line ?? 'unknown';
-      const lineColor = f.properties?.color ?? f.properties?.stroke ?? '#0a7a3c';
-
-      for (const segment of coords) {
-        this._processLineSegment(segment, lineId, lineColor);
+      // Store color discovered from LineString stroke property too
+      if (f.properties?.stroke && !this.lineColors.has(lineId)) {
+        this.lineColors.set(lineId, f.properties.stroke);
       }
+
+      const allCoords = f.geometry.type === 'LineString'
+        ? f.geometry.coordinates
+        : f.geometry.coordinates.flat(); // MultiLineString — flatten into one path
+
+      this._processLineSegment(allCoords, lineId, lineColor);
     }
 
     return this;
   }
 
+  /**
+   * Walk the coordinate array of a single LineString.
+   * Creates edges between consecutive station nodes (and the line's terminal
+   * endpoints even if no named station exists there).
+   */
   _processLineSegment(coords, lineId, lineColor) {
-    // Each consecutive pair of coordinates becomes an edge;
-    // intersection nodes are automatically created as side-effects of _getOrCreateNode.
     let prevNode = null;
     let accDistM = 0;
-    let segStart = null;
 
     for (let i = 0; i < coords.length; i++) {
       const [lng, lat] = coords[i];
-      const isEndpoint = i === 0 || i === coords.length - 1;
 
       if (i > 0) {
         const [plng, plat] = coords[i - 1];
         accDistM += haversineM(plat, plng, lat, lng);
       }
 
-      // Create nodes only at endpoints; intermediate coords just accumulate distance
-      if (isEndpoint) {
-        const node = this._getOrCreateNode(lat, lng, null, lineId);
+      const isEndpoint = i === 0 || i === coords.length - 1;
+
+      // Find a pre-indexed station node near this coordinate
+      const nearStation = this._findNearNode(lat, lng, STATION_SNAP_M);
+
+      if (isEndpoint || nearStation) {
+        // Use the existing station node or create a terminal node
+        const node = nearStation ?? this._getOrCreateNode(lat, lng, null);
         node.lines.add(lineId);
 
-        if (prevNode && prevNode.id !== node.id) {
+        if (prevNode && prevNode.id !== node.id && accDistM > 0) {
           this.edges.push({ from: prevNode.id, to: node.id, distanceM: accDistM, lineId, lineColor });
           this.edges.push({ from: node.id, to: prevNode.id, distanceM: accDistM, lineId, lineColor });
         }
 
         prevNode = node;
         accDistM = 0;
-        segStart = [lat, lng];
       }
     }
   }
 
-  _getOrCreateNode(lat, lng, name, lineId) {
-    // Snap to existing node within SNAP_DISTANCE_M
+  /** Return the closest node within `maxDist` metres, or null. */
+  _findNearNode(lat, lng, maxDist) {
+    let best = null;
+    let bestDist = maxDist;
     for (const node of this.nodes.values()) {
-      if (haversineM(lat, lng, node.lat, node.lng) <= SNAP_DISTANCE_M) {
-        if (name && !node.name) node.name = name;
-        if (lineId) node.lines.add(lineId);
-        return node;
-      }
+      const d = haversineM(lat, lng, node.lat, node.lng);
+      if (d < bestDist) { bestDist = d; best = node; }
+    }
+    return best;
+  }
+
+  _getOrCreateNode(lat, lng, name) {
+    // Merge nodes that are within NODE_MERGE_M (avoids duplicating the same station)
+    const existing = this._findNearNode(lat, lng, NODE_MERGE_M);
+    if (existing) {
+      if (name && !existing.name) existing.name = name;
+      return existing;
     }
 
     const id = String(this._nextId++);
-    const node = { id, lat, lng, name, lines: new Set(lineId ? [lineId] : []) };
+    const node = { id, lat, lng, name, lines: new Set() };
     this.nodes.set(id, node);
     return node;
   }
 
-  /** Return nodes that act as transfer points (belong to ≥2 lines) */
+  /** Nodes that serve ≥2 lines (interchange stations). */
   get transferNodes() {
     return [...this.nodes.values()].filter(n => n.lines.size >= 2);
   }
 
-  /** Find the node closest to a given lat/lng */
+  /** Find the node closest to a given lat/lng (no distance limit). */
   nearestNode(lat, lng) {
     let best = null;
     let bestDist = Infinity;
@@ -120,7 +157,7 @@ export class TransitNetwork {
     return { node: best, distanceM: bestDist };
   }
 
-  /** Build adjacency list keyed by node id */
+  /** Build adjacency list keyed by node id. */
   buildAdjacency() {
     const adj = new Map();
     for (const id of this.nodes.keys()) adj.set(id, []);
@@ -129,9 +166,58 @@ export class TransitNetwork {
     }
     return adj;
   }
+
+  /** Debug summary logged to console. */
+  logSummary() {
+    const stationNodes  = [...this.nodes.values()].filter(n => n.name).length;
+    const terminalNodes = this.nodes.size - stationNodes;
+    const transfers     = this.transferNodes.length;
+    console.info(
+      `[QUERO network] ${this.nodes.size} nodes (${stationNodes} named, ${terminalNodes} terminals), ` +
+      `${this.edges.length / 2} edges, ${transfers} interchange stations, ` +
+      `${this.lineColors.size} lines`
+    );
+  }
 }
 
-/** Haversine distance in metres */
+// ── Description HTML parser ────────────────────────────────────────────────
+
+/**
+ * Extract line IDs and colors from umap description HTML.
+ *
+ * Format: one or more spans like:
+ *   <span style="background-color: #ef9600"><span style="color:#000">**Linha 1**</span></span>
+ * Sections "**Trens expressos**" and "**Rotas especiais**" act as headers.
+ *
+ * Returns { lines: string[], colors: Map<lineId, hexColor> }
+ * where lineId is the part after "Linha " (e.g. "1", "A", "C").
+ * "Rotas especiais" entries are skipped (TODO).
+ */
+function parseDescriptionLines(html) {
+  if (!html) return { lines: [], colors: new Map() };
+
+  const lines  = [];
+  const colors = new Map();
+
+  // Stop collecting at "Rotas especiais" section (TODO)
+  const [relevantPart] = html.split(/\*\*Rotas especiais\*\*/i);
+
+  // Match each span block: capture background-color and bold line label
+  const spanRe = /background-color\s*:\s*(#[0-9a-f]{3,8})[^>]*>.*?\*\*(Linha\s+([\w\d]+))\*\*/gi;
+  let m;
+  while ((m = spanRe.exec(relevantPart)) !== null) {
+    const color  = m[1];
+    const lineId = m[3]; // e.g. "1", "A", "11"
+    lines.push(lineId);
+    if (!colors.has(lineId)) colors.set(lineId, color);
+  }
+
+  return { lines, colors };
+}
+
+// ── Haversine ─────────────────────────────────────────────────────────────
+
+/** Straight-line distance in metres between two lat/lng points. */
 export function haversineM(lat1, lng1, lat2, lng2) {
   const R = 6371000;
   const dLat = toRad(lat2 - lat1);

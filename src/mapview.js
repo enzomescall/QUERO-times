@@ -21,16 +21,19 @@ export class MapView {
     this._markerLayer  = L.layerGroup().addTo(this.map);
   }
 
-  /** Render the full transit network from GeoJSON */
-  renderNetwork(geojson) {
+  /** Render the full transit network from GeoJSON.
+   *  `lineColors` is a Map<lineId, hexColor> extracted from station descriptions. */
+  renderNetwork(geojson, lineColors = new Map()) {
     this._networkLayer.clearLayers();
 
     L.geoJSON(geojson, {
-      style: feature => ({
-        color: feature.properties?.color ?? feature.properties?.stroke ?? '#0a7a3c',
-        weight: 3,
-        opacity: 0.8,
-      }),
+      style: feature => {
+        const lineId = String(feature.properties?.linha ?? '');
+        const color  = feature.properties?.stroke
+          ?? lineColors.get(lineId)
+          ?? '#0a7a3c';
+        return { color, weight: 3, opacity: 0.85 };
+      },
       pointToLayer: (feature, latlng) =>
         L.circleMarker(latlng, {
           radius: 5,
