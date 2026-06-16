@@ -1,4 +1,4 @@
-import { TransitNetwork, haversineM } from './network.js';
+import { TransitNetwork } from './network.js';
 import { findRoute } from './router.js';
 import { searchAddress } from './geocoding.js';
 import { MapView } from './mapview.js';
@@ -79,7 +79,7 @@ function wireAutocomplete(input, suggList, onSelect) {
 }
 
 function renderSuggestions(list, items, onSelect) {
-  list.innerHTML = '';
+  list.replaceChildren();
   if (!items.length) { hideSugg(list); return; }
   for (const item of items) {
     const li = document.createElement('li');
@@ -90,7 +90,7 @@ function renderSuggestions(list, items, onSelect) {
   list.hidden = false;
 }
 
-function hideSugg(list) { list.hidden = true; list.innerHTML = ''; }
+function hideSugg(list) { list.hidden = true; list.replaceChildren(); }
 
 wireAutocomplete(originInput, originSugg, r => {
   originPoint = r;
@@ -161,27 +161,30 @@ planBtn.addEventListener('click', async () => {
   mapView.setMarkers(originPoint, destPoint);
 
   // Render sidebar results
-  renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode, params);
+  renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode);
 
   setStatus(`Rota calculada — ${formatDuration(totalS)} no total`);
   planBtn.disabled = false;
 });
 
-function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode, params) {
+function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode) {
   resultsSection.hidden = false;
 
   const walkMin   = Math.round((walkOriginS + walkDestS) / 60);
   const transitMin = Math.round(route.totalTimeS / 60);
 
-  resultSummary.innerHTML = `
-    <div class="total-time">${formatDuration(totalS)}</div>
-    <div class="breakdown">
-      ${walkMin > 0 ? `${walkMin}min a pé &nbsp;·&nbsp; ` : ''}
-      ${transitMin}min no trem
-    </div>
-  `;
+  resultSummary.replaceChildren();
 
-  resultSteps.innerHTML = '';
+  const totalEl = document.createElement('div');
+  totalEl.className = 'total-time';
+  totalEl.textContent = formatDuration(totalS);
+
+  const breakdownEl = document.createElement('div');
+  breakdownEl.className = 'breakdown';
+  breakdownEl.textContent = `${walkMin > 0 ? `${walkMin}min a pé · ` : ''}${transitMin}min no trem`;
+
+  resultSummary.append(totalEl, breakdownEl);
+  resultSteps.replaceChildren();
 
   const allSteps = [
     walkOriginS > 5

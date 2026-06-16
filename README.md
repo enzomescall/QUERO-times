@@ -85,6 +85,8 @@ src/
   geocoding.js   — Nominatim address search (rate-limited, biased to Rio)
   mapview.js     — Leaflet: network render, route overlay, walk legs, A/B markers
   style.css      — Sidebar and map layout
+test/
+  router.test.js — Router timing and transfer-state regression tests
 data/
   network.geojson — Replace with real umap export
 ```

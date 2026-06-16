@@ -48,19 +48,3 @@ export async function searchAddress(query) {
   cache.set(normalizedQuery, results);
   return results;
 }
-
-/**
- * Reverse geocode a lat/lng to a human-readable address.
- */
-export async function reverseGeocode(lat, lng) {
-  await throttle();
-  const url = new URL(`${BASE}/reverse`);
-  url.searchParams.set('lat', lat);
-  url.searchParams.set('lon', lng);
-  url.searchParams.set('format', 'jsonv2');
-
-  const res = await fetch(url, { headers: HEADERS });
-  if (!res.ok) throw new Error(`Nominatim reverse error: ${res.status}`);
-  const data = await res.json();
-  return data.display_name ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-}

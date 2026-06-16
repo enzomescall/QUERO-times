@@ -112,7 +112,6 @@ function buildSteps(network, path, edgeTrace, params) {
   if (path.length < 2) return [];
 
   const steps = [];
-  let currentLine  = null;
   let lineStartIdx = 0;
   let lineDistM    = 0;
   let lineTimeS    = 0;
@@ -131,7 +130,6 @@ function buildSteps(network, path, edgeTrace, params) {
         lineId:    edge.lineId,
         lineColor: edge.lineColor,
       });
-      currentLine  = edge.lineId;
       lineStartIdx = i;
     }
 
@@ -162,7 +160,6 @@ function buildSteps(network, path, edgeTrace, params) {
         });
       }
 
-      currentLine  = isLastEdge ? null : edgeTrace[i + 1]?.edge.lineId;
       lineStartIdx = i + 1;
       lineDistM    = 0;
       lineTimeS    = 0;

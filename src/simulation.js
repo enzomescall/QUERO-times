@@ -10,7 +10,7 @@
  */
 
 /** Express lines use lettered identifiers (A–E). */
-export function isExpressLine(lineId) {
+function isExpressLine(lineId) {
   return /^[A-Ea-e]$/.test(String(lineId));
 }
 

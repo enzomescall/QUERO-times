@@ -223,7 +223,7 @@ function parseDescriptionLines(html) {
 // ── Haversine ─────────────────────────────────────────────────────────────
 
 /** Straight-line distance in metres between two lat/lng points. */
-export function haversineM(lat1, lng1, lat2, lng2) {
+function haversineM(lat1, lng1, lat2, lng2) {
   const R = 6371000;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
