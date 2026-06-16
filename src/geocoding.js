@@ -10,6 +10,7 @@ const HEADERS = { 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' };
 const VIEWBOX = '-43.8,-23.1,-42.8,-22.7'; // W,S,E,N
 
 let lastRequestTime = 0;
+const cache = new Map();
 
 async function throttle() {
   const now = Date.now();
@@ -23,9 +24,12 @@ async function throttle() {
  * @returns {Array<{lat, lng, displayName}>}
  */
 export async function searchAddress(query) {
+  const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
+  if (cache.has(normalizedQuery)) return cache.get(normalizedQuery);
+
   await throttle();
   const url = new URL(`${BASE}/search`);
-  url.searchParams.set('q', query);
+  url.searchParams.set('q', query.trim());
   url.searchParams.set('format', 'jsonv2');
   url.searchParams.set('limit', '5');
   url.searchParams.set('viewbox', VIEWBOX);
@@ -36,11 +40,13 @@ export async function searchAddress(query) {
   if (!res.ok) throw new Error(`Nominatim error: ${res.status}`);
 
   const data = await res.json();
-  return data.map(r => ({
+  const results = data.map(r => ({
     lat: parseFloat(r.lat),
     lng: parseFloat(r.lon),
     displayName: r.display_name,
   }));
+  cache.set(normalizedQuery, results);
+  return results;
 }
 
 /**

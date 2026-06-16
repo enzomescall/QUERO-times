@@ -48,21 +48,26 @@ async function init() {
 // ── Autocomplete ───────────────────────────────────────────────────────────
 function wireAutocomplete(input, suggList, onSelect) {
   let debounceTimer = null;
+  let requestSeq = 0;
 
   input.addEventListener('input', () => {
     clearTimeout(debounceTimer);
     const q = input.value.trim();
-    if (q.length < 3) { hideSugg(suggList); return; }
+    if (q.length < 3) { requestSeq += 1; hideSugg(suggList); return; }
 
     debounceTimer = setTimeout(async () => {
+      const seq = ++requestSeq;
       try {
         const results = await searchAddress(q);
+        // Ignore stale responses from slower previous requests.
+        if (seq !== requestSeq || input.value.trim() !== q) return;
         renderSuggestions(suggList, results, r => {
           input.value = r.displayName.split(',').slice(0, 2).join(',');
           hideSugg(suggList);
           onSelect(r);
         });
       } catch (e) {
+        if (seq === requestSeq) setStatus(`Erro ao buscar endereço: ${e.message}`, true);
         console.warn('Geocoding error:', e);
       }
     }, 400);
@@ -191,11 +196,20 @@ function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode, para
   for (const step of allSteps) {
     const li = document.createElement('li');
     const icon = { walk: '🚶', ride: '🚇', wait: '⏱', transfer: '🔄' }[step.type] ?? '•';
-    li.innerHTML = `
-      <span class="step-icon">${icon}</span>
-      <span class="step-detail">${step.description}</span>
-      <span class="step-time">${formatDuration(step.timeS)}</span>
-    `;
+
+    const iconEl = document.createElement('span');
+    iconEl.className = 'step-icon';
+    iconEl.textContent = icon;
+
+    const detailEl = document.createElement('span');
+    detailEl.className = 'step-detail';
+    detailEl.textContent = step.description;
+
+    const timeEl = document.createElement('span');
+    timeEl.className = 'step-time';
+    timeEl.textContent = formatDuration(step.timeS);
+
+    li.append(iconEl, detailEl, timeEl);
     resultSteps.appendChild(li);
   }
 }

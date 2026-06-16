@@ -34,6 +34,14 @@ npm run dev
 
 Then open `http://localhost:5173`.
 
+Quality checks:
+
+```bash
+npm test
+npm run build
+npm audit --audit-level=high
+```
+
 **To use real network data:** replace `data/network.geojson` with the GeoJSON layer export from the QUERO umap (umap layer menu → Export → GeoJSON).
 
 ---
@@ -54,9 +62,12 @@ All parameters are editable in the sidebar at runtime:
 
 | Parameter | Default | Effect |
 |---|---|---|
-| Velocidade máxima | 80 km/h | Cruise speed in the kinematic model |
-| Tempo em estação | 30 s | Dwell time added at every stop |
-| Frequência (headway) | 5 min | Wait = headway ÷ 2 at first boarding and each transfer |
+| Velocidade máxima metropolitana | 80 km/h | Cruise speed for numbered lines 1–12 |
+| Velocidade máxima expressa | 120 km/h | Cruise speed for express lines A–E |
+| Tempo em estação metropolitano | 30 s | Dwell time on numbered lines |
+| Tempo em estação expresso | 45 s | Dwell time on express lines |
+| Frequência metropolitana | 5 min | Wait = headway ÷ 2 on numbered lines |
+| Frequência expressa | 10 min | Wait = headway ÷ 2 on express lines |
 | Aceleração / frenagem | 1.0 m/s² | Ramp-up and ramp-down distance |
 | Velocidade a pé | 5 km/h | Walking speed for origin/destination legs |
 | Penalidade de baldeação | 3 min | Extra time added when switching lines |

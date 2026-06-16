@@ -140,13 +140,14 @@ function stationPopupHtml(name, description) {
   const badgesHtml = badges
     .map(({ label, bg, fg }) =>
       `<span style="display:inline-block;padding:2px 7px;border-radius:3px;` +
-      `background:${bg};color:${fg};font-size:11px;font-weight:700;margin:2px 2px 0 0">${label}</span>`
+      `background:${safeCssColor(bg, '#0a7a3c')};color:${safeCssColor(fg, '#ffffff')};` +
+      `font-size:11px;font-weight:700;margin:2px 2px 0 0">${escapeHtml(label)}</span>`
     )
     .join('');
 
   return (
     `<div class="quero-popup-inner">` +
-    `<strong>${name || 'Estação'}</strong>` +
+    `<strong>${escapeHtml(name || 'Estação')}</strong>` +
     (badgesHtml ? `<div style="margin-top:6px">${badgesHtml}</div>` : '') +
     `</div>`
   );
@@ -170,4 +171,17 @@ function parseLineBadges(html) {
     badges.push({ bg: m[1], fg: m[2], label: m[3] });
   }
   return badges;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function safeCssColor(value, fallback) {
+  return /^#[0-9a-fA-F]{3,8}$/.test(String(value)) ? value : fallback;
 }
