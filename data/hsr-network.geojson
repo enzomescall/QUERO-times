@@ -1,0 +1,57 @@
+{
+  "type": "FeatureCollection",
+  "comment": "Replace this file with the exported GeoJSON for the TAV / HSR proposal. See NETWORK_FORMAT.md for the expected structure.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Rio de Janeiro (placeholder)",
+        "description": "<span class=\"Apple-style-span\" style=\"background-color: #c0392b\"><span style=\"color:#ffffff\">**Linha 1**</span></span>"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.1729, -22.9068, 0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Volta Redonda (placeholder)",
+        "description": "<span class=\"Apple-style-span\" style=\"background-color: #c0392b\"><span style=\"color:#ffffff\">**Linha 1**</span></span>"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-44.1028, -22.5234, 0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "São Paulo (placeholder)",
+        "description": "<span class=\"Apple-style-span\" style=\"background-color: #c0392b\"><span style=\"color:#ffffff\">**Linha 1**</span></span>"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-46.6333, -23.5505, 0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Corredor Rio–SP (placeholder)",
+        "linha": "1",
+        "stroke": "#c0392b",
+        "stroke-width": 3,
+        "stroke-opacity": 1
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-43.1729, -22.9068, 0],
+          [-44.1028, -22.5234, 0],
+          [-46.6333, -23.5505, 0]
+        ]
+      }
+    }
+  ]
+}

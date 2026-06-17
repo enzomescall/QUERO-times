@@ -89,6 +89,20 @@ export class MapView {
     this.map.fitBounds(L.latLngBounds(allCoords), { padding: [48, 48] });
   }
 
+  /** Clear the route overlay and address markers (called on tab switch). */
+  clearRoute() {
+    this._routeLayer.clearLayers();
+    this._markerLayer.clearLayers();
+  }
+
+  /** Fit the map view to a GeoJSON FeatureCollection's bounding box. */
+  fitToNetwork(geojson) {
+    try {
+      const bounds = L.geoJSON(geojson).getBounds();
+      if (bounds.isValid()) this.map.fitBounds(bounds, { padding: [24, 24] });
+    } catch { /* empty geojson — leave view unchanged */ }
+  }
+
   /** Walk legs rendered as dashed gray lines. */
   renderWalkLegs(legs) {
     for (const { from, to } of legs) {

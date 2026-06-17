@@ -11,9 +11,18 @@
     <div id="app">
       <aside id="sidebar">
         <header>
-          <h1>QUERO <span>Transporte</span></h1>
-          <p class="subtitle">Planejador de rotas — rede proposta</p>
+          <h1 id="header-title">QUERO <span>Transporte</span></h1>
+          <p class="subtitle" id="header-subtitle">Planejador de rotas — rede proposta</p>
         </header>
+
+        <nav id="tab-bar" role="tablist">
+          <button class="tab active" data-tab="metro" role="tab" aria-selected="true">
+            Metro QUERO
+          </button>
+          <button class="tab" data-tab="hsr" role="tab" aria-selected="false">
+            Alta Velocidade
+          </button>
+        </nav>
 
         <section id="route-form">
           <div class="input-group">
