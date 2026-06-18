@@ -4,6 +4,7 @@ import { findRoute } from './router.js';
 import { searchAddress } from './geocoding.js';
 import { MapView } from './mapview.js';
 import { walkTimeS, formatDuration } from './simulation.js';
+import { computeIsochrone } from './isochrone.js';
 import { fetchDrivingTimeS } from './compare.js';
 
 // ── Per-tab config ─────────────────────────────────────────────────────────
@@ -229,6 +230,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     originInput.value = ''; destInput.value = '';
     hideSugg(originSugg); hideSugg(destSugg);
     mapView.clearRoute();
+    mapView.clearIsochrone();
     resultsSection.hidden = true;
     resultComparison.hidden = true;
 
@@ -433,6 +435,25 @@ function setStatus(msg, isError = false) {
   statusMsg.textContent = msg;
   statusBar.classList.toggle('error', isError);
 }
+
+// ── Isochrone ──────────────────────────────────────────────────────────────
+document.getElementById('iso-btn').addEventListener('click', () => {
+  const network = networks[activeTab];
+  if (!network) { setStatus('Rede ainda não carregada.', true); return; }
+  if (!originPoint) { setStatus('Insira uma origem primeiro.', true); return; }
+
+  const isoMaxS = parseFloat(document.getElementById('iso-time').value) * 60;
+  const { node } = network.nearestNode(originPoint.lat, originPoint.lng);
+  if (!node) { setStatus('Não foi possível encontrar estação próxima.', true); return; }
+
+  const result = computeIsochrone(network, node.id, getParams(), isoMaxS);
+  mapView.renderIsochrone(result, network.nodes, isoMaxS);
+  setStatus(`Isócrona calculada — ${result.size} nós alcançáveis em ${Math.round(isoMaxS / 60)}min`);
+});
+
+document.getElementById('iso-clear-btn').addEventListener('click', () => {
+  mapView.clearIsochrone();
+});
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 init();

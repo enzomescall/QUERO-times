@@ -608,3 +608,37 @@ details .param:last-child { margin-bottom: 0; }
   color: var(--text-muted, #6b7280);
   font-weight: 500;
 }
+
+/* ── Isochrone ── */
+.iso-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#iso-btn {
+  flex: 1;
+  padding: 8px;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#iso-btn:hover { background: var(--brand-light); }
+
+.btn-secondary {
+  padding: 8px 12px;
+  background: none;
+  color: var(--brand);
+  border: 1.5px solid var(--brand);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary:hover { background: var(--surface-2); }

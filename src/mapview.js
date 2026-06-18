@@ -3,6 +3,7 @@
  */
 
 import L from 'leaflet';
+import { formatDuration } from './simulation.js';
 
 const RIO_CENTER  = [-22.9068, -43.1729];
 const DEFAULT_ZOOM = 10;
@@ -20,9 +21,10 @@ export class MapView {
       maxZoom: 20,
     }).addTo(this.map);
 
-    this._networkLayer = L.layerGroup().addTo(this.map);
-    this._routeLayer   = L.layerGroup().addTo(this.map);
-    this._markerLayer  = L.layerGroup().addTo(this.map);
+    this._networkLayer   = L.layerGroup().addTo(this.map);
+    this._routeLayer     = L.layerGroup().addTo(this.map);
+    this._markerLayer    = L.layerGroup().addTo(this.map);
+    this._isochroneLayer = L.layerGroup().addTo(this.map);
   }
 
   /**
@@ -119,6 +121,44 @@ export class MapView {
     }
   }
 
+  /**
+   * Render isochrone — filled circle markers for every named node in the map,
+   * colored green→yellow→red by fraction of maxTimeS used.
+   * `isochroneMap` is Map<nodeId, timeS>; `nodes` is the network.nodes Map.
+   */
+  renderIsochrone(isochroneMap, nodes, maxTimeS) {
+    this._isochroneLayer.clearLayers();
+
+    for (const [nodeId, timeS] of isochroneMap) {
+      const node = nodes.get(nodeId);
+      if (!node || node.name == null) continue;
+
+      const f = Math.min(timeS / maxTimeS, 1);
+      const color = isoColor(f);
+
+      const marker = L.circleMarker([node.lat, node.lng], {
+        radius:      9,
+        fillColor:   color,
+        color:       'transparent',
+        weight:      0,
+        fillOpacity: 0.85,
+        interactive: true,
+      });
+
+      marker.bindTooltip(`${node.name} — ${formatDuration(timeS)}`, {
+        direction: 'top',
+        offset: [0, -10],
+      });
+
+      marker.addTo(this._isochroneLayer);
+    }
+  }
+
+  /** Clear the isochrone overlay. */
+  clearIsochrone() {
+    this._isochroneLayer.clearLayers();
+  }
+
   /** Place A / B address markers on the map. */
   setMarkers(origin, destination) {
     this._markerLayer.clearLayers();
@@ -143,6 +183,16 @@ export class MapView {
         .bindPopup(destination.displayName ?? 'Destino')
         .addTo(this._markerLayer);
   }
+}
+
+// ── Isochrone color interpolation ─────────────────────────────────────────
+
+function isoColor(f) {
+  const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+  const r = f < 0.5 ? lerp(34, 234, f * 2)  : lerp(234, 239, (f - 0.5) * 2);
+  const g = f < 0.5 ? lerp(197, 163, f * 2) : lerp(163, 68,  (f - 0.5) * 2);
+  const b = f < 0.5 ? lerp(34, 8, f * 2)    : lerp(8,   68,  (f - 0.5) * 2);
+  return `rgb(${r},${g},${b})`;
 }
 
 // ── Station popup ──────────────────────────────────────────────────────────
