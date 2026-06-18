@@ -1,12 +1,12 @@
-# GeoJSON Network Format
+# Formato GeoJSON de Rede
 
-This document explains how to structure a GeoJSON file so it works correctly with the QUERO journey planner. The app reads two kinds of features: **station points** and **track lines**.
+Este documento explica como estruturar um arquivo GeoJSON para que funcione corretamente com o planejador de viagens QUERO. O aplicativo lê dois tipos de features: **pontos de estação** e **linhas de trilho**.
 
 ---
 
-## File structure
+## Estrutura do arquivo
 
-The file must be a valid GeoJSON `FeatureCollection`. You can also include a top-level `network_defaults` object to set initial sidebar values for the whole network:
+O arquivo deve ser um `FeatureCollection` GeoJSON válido. Você também pode incluir um objeto `network_defaults` no nível raiz para definir valores iniciais dos controles laterais para toda a rede:
 
 ```json
 {
@@ -20,23 +20,23 @@ The file must be a valid GeoJSON `FeatureCollection`. You can also include a top
 }
 ```
 
-All fields in `network_defaults` are optional. When present, they pre-fill the corresponding sidebar sliders when the network loads — the user can still change them freely afterwards.
+Todos os campos em `network_defaults` são opcionais. Quando presentes, preenchem automaticamente os controles laterais ao carregar a rede — o usuário pode alterá-los livremente depois.
 
-`traffic_multiplier` scales the driving time returned by OSRM (which assumes free-flow, no congestion). A value of `1.8` means "driving takes 80% longer in real traffic than OSRM estimates." For Rio de Janeiro peak hours, values between 1.5 and 2.5 are realistic. Leave it at `1.0` (the default) for a conservative/baseline comparison.
+`traffic_multiplier` escala o tempo de carro retornado pelo OSRM (que assume fluxo livre, sem congestionamento). Um valor de `1.8` significa "dirigir leva 80% mais tempo no trânsito real do que o OSRM estima." Para o horário de pico do Rio de Janeiro, valores entre 1,5 e 2,5 são realistas. Deixe em `1.0` (padrão) para uma comparação conservadora.
 
-| Field | Unit | Sidebar slider |
+| Campo | Unidade | Controle lateral |
 |---|---|---|
-| `network_name` | string (e.g. `"TAV"`) | Label shown in the comparison panel |
+| `network_name` | texto (ex.: `"TAV"`) | Rótulo no painel de comparação |
 | `accel_ms2` | m/s² | Aceleração |
 | `walk_speed_kph` | km/h | Velocidade a pé |
-| `transfer_penalty_min` | minutes | Penalidade de baldeação |
-| `traffic_multiplier` | multiplier (e.g. `1.8`) | Multiplicador de tráfego |
+| `transfer_penalty_min` | minutos | Penalidade de baldeação |
+| `traffic_multiplier` | multiplicador (ex.: `1.8`) | Multiplicador de tráfego |
 
 ---
 
-## Feature type 1 — Stations (Point)
+## Tipo de feature 1 — Estações (Point)
 
-Each station is a `Point` feature. The two required properties are `name` and `description`.
+Cada estação é uma feature do tipo `Point`. As duas propriedades obrigatórias são `name` e `description`.
 
 ```json
 {
@@ -52,35 +52,35 @@ Each station is a `Point` feature. The two required properties are `name` and `d
 }
 ```
 
-### `name` (required)
-The station's display name. Shown in route steps, tooltips, and popup headers.
+### `name` (obrigatório)
+Nome de exibição da estação. Aparece nos passos da rota, nos tooltips e no cabeçalho dos popups.
 
-### `description` (required for line membership)
-HTML string listing every line that serves this station. The app parses this field to know which lines stop here — it is the **only** authoritative source of line membership.
+### `description` (obrigatório para identificar as linhas)
+String HTML listando todas as linhas que atendem esta estação. O aplicativo analisa este campo para saber quais linhas param aqui — é a **única** fonte confiável de filiação a linhas.
 
-Each line entry must be a nested `<span>` pair in this exact format:
+Cada entrada de linha deve ser um par de `<span>` aninhados neste formato exato:
 
 ```html
 <span style="background-color: #HEX"><span style="color:#HEX">**Linha X**</span></span>
 ```
 
-- The outer span's `background-color` is the line's display color (used in popups and route badges).
-- The inner span's `color` is the text color (white on dark backgrounds, black on light ones).
-- `**Linha X**` is the line identifier in Markdown bold. `X` can be a number (`1`–`12`) or a letter (`A`–`E` for express lines).
+- O `background-color` do span externo é a cor de exibição da linha (usada em popups e badges de rota).
+- O `color` do span interno é a cor do texto (branco em fundos escuros, preto em fundos claros).
+- `**Linha X**` é o identificador da linha em negrito Markdown. `X` pode ser um número (`1`–`12`) ou uma letra (`A`–`E` para linhas expressas).
 
-Multiple lines are separated by newlines (`\n`):
+Várias linhas são separadas por quebras de linha (`\n`):
 
 ```
-**Linha 1** span
+span da **Linha 1**
 \n
-**Linha 4** span
+span da **Linha 4**
 ```
 
-#### Special sections in description
+#### Seções especiais na descrição
 
-The parser stops at the first occurrence of `**Rotas especiais**`. Anything after that heading is ignored (circular routes — see TODO in README).
+O parser para na primeira ocorrência de `**Rotas especiais**`. Tudo depois desse título é ignorado (rotas circulares — ver TODO no README).
 
-Express trains can be grouped under a `**Trens expressos**` heading, but the heading itself is not required — the parser identifies express lines by their letter identifier (`A`–`E`), not by their section.
+Os trens expressos podem ser agrupados sob o título `**Trens expressos**`, mas o título em si não é obrigatório — o parser identifica as linhas expressas pelo identificador de letra (`A`–`E`), não pela seção.
 
 ```html
 <span ...>**Linha 7**</span>
@@ -89,17 +89,17 @@ Express trains can be grouped under a `**Trens expressos**` heading, but the hea
 <span ...>**Linha C**</span>
 ```
 
-### `linha` (optional, often unreliable)
-Some umap exports set this to the line number for single-line stations, but interchange stations are often tagged `"M"` (multi-line marker). **Do not rely on this field for line membership** — always use `description` instead.
+### `linha` (opcional, frequentemente não confiável)
+Alguns exports do umap definem isso com o número da linha para estações de linha única, mas estações de baldeação frequentemente são marcadas como `"M"` (marcador multi-linha). **Não confie neste campo para identificar linhas** — sempre use `description`.
 
-### `populacao_milhoes` / `pib_brl_bilhoes` (optional, HSR networks)
-Population in millions and GDP in BRL billions for the city served by this station. When present, these are displayed in the station popup.
+### `populacao_milhoes` / `pib_brl_bilhoes` (opcional, redes TAV)
+População em milhões e PIB em bilhões de BRL para a cidade atendida por esta estação. Quando presentes, são exibidos no popup da estação.
 
 ---
 
-## Feature type 2 — Track geometry (LineString)
+## Tipo de feature 2 — Geometria da via (LineString)
 
-Each line (or branch of a line) is a `LineString` feature. For branching lines, use one `LineString` per branch rather than a `MultiLineString`.
+Cada linha (ou ramal de uma linha) é uma feature do tipo `LineString`. Para linhas com ramais, use um `LineString` por ramal em vez de um `MultiLineString`.
 
 ```json
 {
@@ -125,111 +125,111 @@ Each line (or branch of a line) is a `LineString` feature. For branching lines, 
 }
 ```
 
-### `linha` (required)
-The line identifier. Must match the identifier used in station `description` fields:
-- Numbered metro/rail lines: `"1"`, `"2"`, … `"12"`
-- Lettered express/commuter lines: `"A"`, `"B"`, `"C"`, `"D"`, `"E"`
+### `linha` (obrigatório)
+O identificador da linha. Deve corresponder ao identificador usado nos campos `description` das estações:
+- Linhas metro/ferroviárias numeradas: `"1"`, `"2"`, … `"12"`
+- Linhas expressas/suburbanas com letras: `"A"`, `"B"`, `"C"`, `"D"`, `"E"`
 
-This value is what the router uses to detect line changes (and therefore transfers).
+Este valor é o que o roteador usa para detectar trocas de linha (e portanto baldeações).
 
-### `stroke` (required for correct colors)
-Hex color for this line, e.g. `"#ef9600"`. Used when rendering the network on the map. If absent, the color falls back to whatever was parsed from station descriptions for the same `linha` id, then to a default green.
+### `stroke` (obrigatório para cores corretas)
+Cor hexadecimal desta linha, ex.: `"#ef9600"`. Usada ao renderizar a rede no mapa. Se ausente, a cor volta ao que foi analisado nas descrições das estações para o mesmo `linha`, depois para um verde padrão.
 
-### `speed` (optional)
-Design speed of this line in **km/h**. When present on the first `LineString` of each type (metro or express), this value pre-fills the corresponding speed slider in the sidebar. The user can override it after load.
+### `speed` (opcional)
+Velocidade de projeto desta linha em **km/h**. Quando presente no primeiro `LineString` de cada tipo (metro ou expresso), preenche o controle de velocidade correspondente na barra lateral. O usuário pode alterar após o carregamento.
 
 ```json
 "properties": { "linha": "1", "stroke": "#e63946", "speed": 300 }
 ```
 
-### `dwell_s` (optional)
-Station dwell time in **seconds** — how long the train waits at each stop. Pre-fills the *Tempo de parada* sidebar slider on load.
+### `dwell_s` (opcional)
+Tempo de parada na estação em **segundos** — quanto tempo o trem fica parado em cada estação. Preenche o controle *Tempo de parada* na barra lateral ao carregar.
 
 ```json
 "properties": { "linha": "1", "dwell_s": 30 }
 ```
 
-### `headway_min` (optional)
-Service frequency in **minutes** (time between trains). Pre-fills the *Frequência* sidebar slider on load. Expected wait at any station is `headway_min / 2`.
+### `headway_min` (opcional)
+Frequência do serviço em **minutos** (intervalo entre trens). Preenche o controle *Frequência* na barra lateral ao carregar. A espera esperada em qualquer estação é `headway_min / 2`.
 
 ```json
 "properties": { "linha": "1", "headway_min": 5 }
 ```
 
-For networks with both metro and express lines, the first `LineString` of each type (lettered vs. numbered) to declare these properties sets the default for its category.
+Para redes com linhas metro e expressas, o primeiro `LineString` de cada tipo (com letras vs. numerado) que declarar essas propriedades define o padrão para sua categoria.
 
-### `linha-ramal` (optional)
-Branch identifier for lines with multiple ramais (e.g. `"A1"`, `"A2"`). Not used by the router today but preserved for future filtering by branch.
+### `linha-ramal` (opcional)
+Identificador de ramal para linhas com múltiplos ramais (ex.: `"A1"`, `"A2"`). Não usado pelo roteador hoje, mas preservado para futura filtragem por ramal.
 
-### `name` (optional)
-Human-readable line name, e.g. `"Linha A :: Ramal Muriqui"`. Not used by the router.
+### `name` (opcional)
+Nome legível da linha, ex.: `"Linha A :: Ramal Muriqui"`. Não usado pelo roteador.
 
 ---
 
-## Sidebar defaults — how GeoJSON values become editable defaults
+## Padrões da barra lateral — como os valores do GeoJSON viram padrões editáveis
 
-When a network loads, the app reads `network_defaults` from the `FeatureCollection` and `speed`, `dwell_s`, `headway_min` from `LineString` features. These values are pushed into the sidebar sliders as starting values. The sidebar remains the single source of truth for every route calculation — you can change any slider at any time without reloading the network.
+Ao carregar uma rede, o aplicativo lê `network_defaults` do `FeatureCollection` e `speed`, `dwell_s`, `headway_min` das features `LineString`. Esses valores são inseridos nos controles da barra lateral como valores iniciais. A barra lateral continua sendo a única fonte de verdade para cada cálculo de rota — você pode alterar qualquer controle a qualquer momento sem recarregar a rede.
 
-Only the first `LineString` of each type (metro / express) that declares a given property is used; subsequent `LineString` features on the same type are ignored for defaults.
+Apenas o primeiro `LineString` de cada tipo (metro / expresso) que declarar uma determinada propriedade é usado; features `LineString` subsequentes do mesmo tipo são ignoradas para os padrões.
 
-| GeoJSON field | Applies to | Sidebar input |
+| Campo GeoJSON | Aplica-se a | Controle lateral |
 |---|---|---|
-| `network_defaults.network_name` | Both | Comparison panel label (e.g. "TAV", "QUERO") |
-| `network_defaults.accel_ms2` | Both | Aceleração (m/s²) |
-| `network_defaults.walk_speed_kph` | Both | Velocidade a pé (km/h) |
-| `network_defaults.transfer_penalty_min` | Both | Penalidade de baldeação (min) |
-| `network_defaults.traffic_multiplier` | Both | Multiplicador de tráfego (×) |
-| `speed` on numeric `LineString` | Metro | Velocidade máxima — metro |
-| `dwell_s` on numeric `LineString` | Metro | Tempo de parada — metro |
-| `headway_min` on numeric `LineString` | Metro | Frequência — metro |
-| `speed` on lettered `LineString` | Express | Velocidade máxima — expresso |
-| `dwell_s` on lettered `LineString` | Express | Tempo de parada — expresso |
-| `headway_min` on lettered `LineString` | Express | Frequência — expresso |
+| `network_defaults.network_name` | Ambos | Rótulo no painel de comparação (ex.: "TAV", "QUERO") |
+| `network_defaults.accel_ms2` | Ambos | Aceleração (m/s²) |
+| `network_defaults.walk_speed_kph` | Ambos | Velocidade a pé (km/h) |
+| `network_defaults.transfer_penalty_min` | Ambos | Penalidade de baldeação (min) |
+| `network_defaults.traffic_multiplier` | Ambos | Multiplicador de tráfego (×) |
+| `speed` em `LineString` numérico | Metro | Velocidade máxima — metro |
+| `dwell_s` em `LineString` numérico | Metro | Tempo de parada — metro |
+| `headway_min` em `LineString` numérico | Metro | Frequência — metro |
+| `speed` em `LineString` com letra | Expresso | Velocidade máxima — expresso |
+| `dwell_s` em `LineString` com letra | Expresso | Tempo de parada — expresso |
+| `headway_min` em `LineString` com letra | Expresso | Frequência — expresso |
 
 ---
 
-## How the router uses these features
+## Como o roteador usa essas features
 
-1. **Pass 1** — All `Point` features are indexed as graph nodes. Line membership is read from `description`.
-2. **Pass 2** — Each `LineString` is walked coordinate by coordinate. Whenever a coordinate falls within **300 m** of an indexed station node, an edge is emitted between that station and the previous one encountered on the same line. This splits the line into per-station-pair edges.
-3. **Routing** — Dijkstra finds the minimum-time path. Switching from one `linha` to another triggers a transfer penalty + wait time.
+1. **Passagem 1** — Todas as features `Point` são indexadas como nós do grafo. A filiação a linhas é lida a partir de `description`.
+2. **Passagem 2** — Cada `LineString` é percorrido coordenada por coordenada. Sempre que uma coordenada estiver dentro de **300 m** de um nó de estação indexado, uma aresta é emitida entre essa estação e a anterior encontrada na mesma linha. Isso divide a linha em arestas por par de estações.
+3. **Roteamento** — O algoritmo de Dijkstra encontra o caminho de menor tempo. Trocar de um `linha` para outro dispara uma penalidade de baldeação + tempo de espera.
 
-### Implication: station coordinates must be near the track
+### Implicação: coordenadas das estações devem estar próximas da via
 
-Station `Point` coordinates should be placed on or very close (within ~300 m) to the corresponding `LineString` coordinates. If a station is further away than that threshold, the router will not snap it to the line and the edge will not be split at that station — effectively making the station invisible to routing.
+As coordenadas `Point` das estações devem ser colocadas sobre ou muito próximas (dentro de ~300 m) das coordenadas correspondentes do `LineString`. Se uma estação estiver mais distante do que esse limiar, o roteador não a conectará à linha e a aresta não será dividida nessa estação — efetivamente tornando a estação invisível ao roteamento.
 
-### Implication: lines connect through shared stations
+### Implicação: linhas se conectam por estações compartilhadas
 
-Two lines connect if they share a station node (i.e., there is a `Point` feature near both `LineString` geometries whose `description` lists both line IDs). There is no need to make `LineString` endpoints touch — the station snapping handles transfers automatically.
-
----
-
-## Express vs. regular lines
-
-Lines identified by a letter (`A`–`E`) are treated as **express** lines by the simulation engine and use separate speed, dwell time, and headway parameters (configurable in the sidebar). All other lines use the regular metro parameters.
-
-The sidebar automatically hides irrelevant panels when a network loads:
-- Only numbered lines present → the *Trens expressos* panel is hidden.
-- Only lettered lines present → the *Linhas metropolitanas* panel is hidden.
-- Both present, or neither (custom IDs) → both panels are shown.
-
-If your network has a different express/regular split, you can adjust the `isExpressLine()` function in `src/simulation.js`.
+Duas linhas se conectam se compartilharem um nó de estação (ou seja, existe uma feature `Point` próxima a ambas as geometrias `LineString` cuja `description` lista os dois IDs de linha). Não é necessário que os endpoints dos `LineString` se toquem — o snap de estação cuida das baldeações automaticamente.
 
 ---
 
-## Tips for creating data in umap (openstreetmap.fr/umap)
+## Expressas vs. linhas regulares
 
-1. Draw each line as a separate layer or at least tag each feature with a `linha` property.
-2. Place station markers directly on the line path — click on the line while drawing to snap to it.
-3. In each station's description field, add the `<span>` HTML for every line it serves. The background color should match the `stroke` color of the corresponding `LineString`.
-4. Export: **Layer menu → Download data → GeoJSON**. If exporting all layers at once, use the map-level export (not per-layer) to get a single `FeatureCollection`.
-5. Replace `data/network.geojson` (or `data/hsr-network.geojson`) with the downloaded file and reload the app.
+Linhas identificadas por uma letra (`A`–`E`) são tratadas como linhas **expressas** pelo motor de simulação e usam parâmetros separados de velocidade, tempo de parada e frequência (configuráveis na barra lateral). Todas as outras linhas usam os parâmetros regulares de metro.
+
+A barra lateral oculta automaticamente os painéis irrelevantes ao carregar uma rede:
+- Apenas linhas numeradas presentes → o painel *Trens expressos* é ocultado.
+- Apenas linhas com letras presentes → o painel *Linhas metropolitanas* é ocultado.
+- Ambos presentes, ou nenhum (IDs personalizados) → ambos os painéis são exibidos.
+
+Se sua rede tiver uma divisão expresso/regular diferente, você pode ajustar a função `isExpressLine()` em `src/simulation.js`.
 
 ---
 
-## Minimal working example
+## Dicas para criar dados no umap (openstreetmap.fr/umap)
 
-A two-station, one-line network that will route correctly:
+1. Desenhe cada linha como uma camada separada ou pelo menos marque cada feature com uma propriedade `linha`.
+2. Posicione os marcadores de estação diretamente sobre o caminho da linha — clique na linha durante o desenho para encaixar nela.
+3. No campo de descrição de cada estação, adicione o HTML `<span>` para cada linha que ela atende. A cor de fundo deve corresponder à cor `stroke` do `LineString` correspondente.
+4. Exportar: **Menu da camada → Baixar dados → GeoJSON**. Se exportar todas as camadas de uma vez, use a exportação no nível do mapa (não por camada) para obter um único `FeatureCollection`.
+5. Substitua `data/network.geojson` (ou `data/hsr-network.geojson`) pelo arquivo baixado e recarregue o aplicativo.
+
+---
+
+## Exemplo mínimo funcional
+
+Uma rede de duas estações e uma linha que roteará corretamente:
 
 ```json
 {
