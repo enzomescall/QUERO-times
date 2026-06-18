@@ -16,13 +16,22 @@
         </header>
 
         <nav id="tab-bar" role="tablist">
-          <button class="tab active" data-tab="metro" role="tab" aria-selected="true">
-            Metro QUERO
-          </button>
-          <button class="tab" data-tab="hsr" role="tab" aria-selected="false">
-            Alta Velocidade
-          </button>
+          <button class="tab active" data-tab="metro" role="tab" aria-selected="true">Metro QUERO</button>
+          <button class="tab" data-tab="hsr" role="tab" aria-selected="false">Alta Velocidade</button>
+          <button class="tab" data-tab="custom" role="tab" aria-selected="false">Personalizado</button>
         </nav>
+
+        <!-- Shown only on custom tab before a file is loaded -->
+        <section id="upload-section" hidden>
+          <div id="upload-zone">
+            <div class="upload-icon">📂</div>
+            <p class="upload-primary">Arraste um GeoJSON aqui</p>
+            <p class="upload-or">ou</p>
+            <label for="geojson-file" class="upload-btn">Escolher arquivo</label>
+            <input id="geojson-file" type="file" accept=".geojson,.json" />
+            <p class="upload-hint">Consulte a documentação ao lado para o formato esperado.</p>
+          </div>
+        </section>
 
         <section id="route-form">
           <div class="input-group">
@@ -103,7 +112,11 @@
         </section>
       </aside>
 
+      <!-- Map and docs panel share the same flex slot; only one is visible at a time -->
       <div id="map"></div>
+      <div id="docs-panel" hidden>
+        <div id="docs-content"></div>
+      </div>
     </div>
 
     <script type="module" src="/src/main.js"></script>

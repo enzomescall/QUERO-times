@@ -13,6 +13,7 @@
     "vite": "^8.0.16"
   },
   "dependencies": {
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.9.4",
+    "marked": "^13.0.0"
   }
 }

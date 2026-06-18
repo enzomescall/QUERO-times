@@ -1,3 +1,4 @@
+import { marked } from 'marked';
 import { TransitNetwork } from './network.js';
 import { findRoute } from './router.js';
 import { searchAddress } from './geocoding.js';
@@ -16,33 +17,77 @@ const TAB_CONFIG = {
     title:    'Alta Velocidade',
     subtitle: 'Planejador de rotas — TAV proposto',
   },
+  custom: {
+    geojsonPath: null, // loaded from file upload
+    title:    'Rede Personalizada',
+    subtitle: 'Carregue seu próprio GeoJSON',
+  },
 };
 
 // ── State ──────────────────────────────────────────────────────────────────
-const networks = { metro: null, hsr: null };
-const geojsons = { metro: null, hsr: null };
-let activeTab    = 'metro';
-let mapView      = null;
-let originPoint  = null;
-let destPoint    = null;
+const networks = { metro: null, hsr: null, custom: null };
+const geojsons = { metro: null, hsr: null, custom: null };
+let activeTab   = 'metro';
+let mapView     = null;
+let originPoint = null;
+let destPoint   = null;
+let docsLoaded  = false;
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const appEl         = document.getElementById('app');
-const headerTitle   = document.getElementById('header-title');
-const headerSub     = document.getElementById('header-subtitle');
-const originInput   = document.getElementById('origin');
-const destInput     = document.getElementById('destination');
-const originSugg    = document.getElementById('origin-suggestions');
-const destSugg      = document.getElementById('destination-suggestions');
-const planBtn       = document.getElementById('plan-btn');
+const appEl          = document.getElementById('app');
+const headerTitle    = document.getElementById('header-title');
+const headerSub      = document.getElementById('header-subtitle');
+const uploadSection  = document.getElementById('upload-section');
+const uploadZone     = document.getElementById('upload-zone');
+const geojsonFile    = document.getElementById('geojson-file');
+const originInput    = document.getElementById('origin');
+const destInput      = document.getElementById('destination');
+const originSugg     = document.getElementById('origin-suggestions');
+const destSugg       = document.getElementById('destination-suggestions');
+const planBtn        = document.getElementById('plan-btn');
 const resultsSection = document.getElementById('results');
-const resultSummary = document.getElementById('result-summary');
-const resultSteps   = document.getElementById('result-steps');
-const statusMsg     = document.getElementById('status-msg');
-const statusBar     = document.getElementById('status-bar');
+const resultSummary  = document.getElementById('result-summary');
+const resultSteps    = document.getElementById('result-steps');
+const statusMsg      = document.getElementById('status-msg');
+const statusBar      = document.getElementById('status-bar');
+const mapEl          = document.getElementById('map');
+const docsPanel      = document.getElementById('docs-panel');
+const docsContent    = document.getElementById('docs-content');
+
+// ── Layout helper ──────────────────────────────────────────────────────────
+/**
+ * Show/hide the correct panels for the current tab state.
+ * custom + no file → upload zone + docs panel instead of map + routing UI.
+ */
+function applyTabLayout(tab) {
+  const isCustomEmpty = tab === 'custom' && !networks.custom;
+
+  uploadSection.hidden                             = !isCustomEmpty;
+  document.getElementById('route-form').hidden     = isCustomEmpty;
+  document.getElementById('params-section').hidden = isCustomEmpty;
+  mapEl.hidden                                     = isCustomEmpty;
+  docsPanel.hidden                                 = !isCustomEmpty;
+
+  // Leaflet loses its dimensions when its container is hidden; recalc on show.
+  if (!isCustomEmpty) requestAnimationFrame(() => mapView?.map.invalidateSize());
+}
 
 // ── Network loading ────────────────────────────────────────────────────────
 async function loadNetwork(tab) {
+  if (tab === 'custom') {
+    if (networks.custom) {
+      mapView.renderNetwork(geojsons.custom, networks.custom.lineColors);
+      mapView.fitToNetwork(geojsons.custom);
+      updateParamVisibility(networks.custom);
+      const n = networks.custom;
+      setStatus(`Rede carregada — ${n.nodes.size} estações, ${n.edges.length / 2} segmentos`);
+    } else {
+      setStatus('Carregue um arquivo GeoJSON para começar');
+      loadDocs();
+    }
+    return;
+  }
+
   if (networks[tab]) {
     mapView.renderNetwork(geojsons[tab], networks[tab].lineColors);
     mapView.fitToNetwork(geojsons[tab]);
@@ -60,7 +105,6 @@ async function loadNetwork(tab) {
 
     const net = new TransitNetwork().loadGeoJSON(geojson);
     net.logSummary();
-
     networks[tab] = net;
     geojsons[tab] = geojson;
 
@@ -74,17 +118,60 @@ async function loadNetwork(tab) {
   }
 }
 
-/**
- * Show only the param sections that are relevant for the loaded network.
- * If the network uses only numbered lines, hide the express panel (and vice
- * versa). If it uses both — or neither (unknown custom IDs) — show both.
- */
 function updateParamVisibility(network) {
   const { hasMetro, hasExpress } = network.lineTypes;
-  const showBoth = !hasMetro && !hasExpress; // custom/unknown line ids → show everything
-  document.getElementById('metro-params').hidden  = !showBoth && !hasMetro;
+  const showBoth = !hasMetro && !hasExpress;
+  document.getElementById('metro-params').hidden   = !showBoth && !hasMetro;
   document.getElementById('express-params').hidden = !showBoth && !hasExpress;
 }
+
+// ── Docs panel ─────────────────────────────────────────────────────────────
+async function loadDocs() {
+  if (docsLoaded) return;
+  try {
+    const res = await fetch('/NETWORK_FORMAT.md');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const md = await res.text();
+    docsContent.innerHTML = marked.parse(md);
+    docsLoaded = true;
+  } catch {
+    docsContent.textContent = 'Documentação não disponível.';
+  }
+}
+
+// ── File upload (custom tab) ───────────────────────────────────────────────
+async function handleGeojsonFile(file) {
+  if (!file) return;
+  setStatus(`Lendo ${file.name}...`);
+  try {
+    const text    = await file.text();
+    const geojson = JSON.parse(text);
+
+    const net = new TransitNetwork().loadGeoJSON(geojson);
+    net.logSummary();
+    networks.custom = net;
+    geojsons.custom = geojson;
+
+    // Switch view: hide docs, show map + routing UI
+    applyTabLayout('custom');
+    mapView.renderNetwork(geojson, net.lineColors);
+    mapView.fitToNetwork(geojson);
+    updateParamVisibility(net);
+    setStatus(`Rede carregada — ${net.nodes.size} estações, ${net.edges.length / 2} segmentos`);
+  } catch (err) {
+    setStatus(`Erro ao ler GeoJSON: ${err.message}`, true);
+  }
+}
+
+geojsonFile.addEventListener('change', e => handleGeojsonFile(e.target.files[0]));
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  handleGeojsonFile(e.dataTransfer.files[0]);
+});
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
@@ -94,13 +181,11 @@ document.querySelectorAll('.tab').forEach(btn => {
 
     activeTab = tab;
 
-    // Update tab visual state
     document.querySelectorAll('.tab').forEach(t => {
       t.classList.toggle('active', t.dataset.tab === tab);
       t.setAttribute('aria-selected', String(t.dataset.tab === tab));
     });
 
-    // Update theme and header text
     appEl.dataset.tab = tab;
     const cfg = TAB_CONFIG[tab];
     headerTitle.innerHTML = cfg.title.includes(' ')
@@ -108,16 +193,14 @@ document.querySelectorAll('.tab').forEach(btn => {
       : cfg.title;
     headerSub.textContent = cfg.subtitle;
 
-    // Clear route state for the new tab
-    originPoint = null;
-    destPoint   = null;
-    originInput.value = '';
-    destInput.value   = '';
-    hideSugg(originSugg);
-    hideSugg(destSugg);
+    // Clear route state
+    originPoint = null; destPoint = null;
+    originInput.value = ''; destInput.value = '';
+    hideSugg(originSugg); hideSugg(destSugg);
     mapView.clearRoute();
     resultsSection.hidden = true;
 
+    applyTabLayout(tab);
     await loadNetwork(tab);
   });
 });
@@ -126,6 +209,7 @@ document.querySelectorAll('.tab').forEach(btn => {
 async function init() {
   mapView = new MapView('map');
   appEl.dataset.tab = activeTab;
+  applyTabLayout(activeTab);
   await loadNetwork(activeTab);
 }
 
@@ -175,15 +259,8 @@ function renderSuggestions(list, items, onSelect) {
 
 function hideSugg(list) { list.hidden = true; list.replaceChildren(); }
 
-wireAutocomplete(originInput, originSugg, r => {
-  originPoint = r;
-  mapView.setMarkers(originPoint, destPoint);
-});
-
-wireAutocomplete(destInput, destSugg, r => {
-  destPoint = r;
-  mapView.setMarkers(originPoint, destPoint);
-});
+wireAutocomplete(originInput, originSugg, r => { originPoint = r; mapView.setMarkers(originPoint, destPoint); });
+wireAutocomplete(destInput,   destSugg,   r => { destPoint   = r; mapView.setMarkers(originPoint, destPoint); });
 
 // ── Params helper ──────────────────────────────────────────────────────────
 function getParams() {
@@ -220,7 +297,6 @@ planBtn.addEventListener('click', async () => {
   }
 
   const route = findRoute(network, oNode.id, dNode.id, params);
-
   if (!route) {
     setStatus('Nenhuma rota encontrada entre os pontos selecionados.', true);
     planBtn.disabled = false;
@@ -237,7 +313,6 @@ planBtn.addEventListener('click', async () => {
     { from: [dNode.lat, dNode.lng],             to: [destPoint.lat, destPoint.lng] },
   ]);
   mapView.setMarkers(originPoint, destPoint);
-
   renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode);
   setStatus(`Rota calculada — ${formatDuration(totalS)} no total`);
   planBtn.disabled = false;
@@ -250,44 +325,27 @@ function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode) {
   const transitMin = Math.round(route.totalTimeS / 60);
 
   resultSummary.replaceChildren();
-
   const totalEl = document.createElement('div');
   totalEl.className   = 'total-time';
   totalEl.textContent = formatDuration(totalS);
-
   const breakdownEl = document.createElement('div');
   breakdownEl.className   = 'breakdown';
   breakdownEl.textContent = `${walkMin > 0 ? `${walkMin}min a pé · ` : ''}${transitMin}min no trem`;
-
   resultSummary.append(totalEl, breakdownEl);
-  resultSteps.replaceChildren();
 
+  resultSteps.replaceChildren();
   const allSteps = [
-    walkOriginS > 5
-      ? { type: 'walk', description: `Caminhar até ${oNode.name ?? 'estação mais próxima'} (${Math.round(walkOriginS / 60)}min)`, timeS: walkOriginS }
-      : null,
+    walkOriginS > 5 ? { type: 'walk', description: `Caminhar até ${oNode.name ?? 'estação mais próxima'} (${Math.round(walkOriginS / 60)}min)`, timeS: walkOriginS } : null,
     ...route.steps,
-    walkDestS > 5
-      ? { type: 'walk', description: `Caminhar até o destino (${Math.round(walkDestS / 60)}min)`, timeS: walkDestS }
-      : null,
+    walkDestS   > 5 ? { type: 'walk', description: `Caminhar até o destino (${Math.round(walkDestS / 60)}min)`, timeS: walkDestS } : null,
   ].filter(Boolean);
 
   for (const step of allSteps) {
     const li = document.createElement('li');
     const icon = { walk: '🚶', ride: '🚇', wait: '⏱', transfer: '🔄' }[step.type] ?? '•';
-
-    const iconEl = document.createElement('span');
-    iconEl.className   = 'step-icon';
-    iconEl.textContent = icon;
-
-    const detailEl = document.createElement('span');
-    detailEl.className   = 'step-detail';
-    detailEl.textContent = step.description;
-
-    const timeEl = document.createElement('span');
-    timeEl.className   = 'step-time';
-    timeEl.textContent = formatDuration(step.timeS);
-
+    const iconEl   = document.createElement('span'); iconEl.className = 'step-icon'; iconEl.textContent = icon;
+    const detailEl = document.createElement('span'); detailEl.className = 'step-detail'; detailEl.textContent = step.description;
+    const timeEl   = document.createElement('span'); timeEl.className = 'step-time'; timeEl.textContent = formatDuration(step.timeS);
     li.append(iconEl, detailEl, timeEl);
     resultSteps.appendChild(li);
   }

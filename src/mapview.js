@@ -39,10 +39,11 @@ export class MapView {
         return { color, weight: 3, opacity: 0.8 };
       },
       pointToLayer: (feature, latlng) => {
-        const name    = feature.properties?.name ?? '';
-        const desc    = feature.properties?.description ?? '';
-        const lineId  = String(feature.properties?.linha ?? '');
-        const color   = lineColors.get(lineId) ?? '#0a7a3c';
+        const p      = feature.properties ?? {};
+        const name   = p.name  ?? '';
+        const desc   = p.description ?? '';
+        const lineId = String(p.linha ?? '');
+        const color  = lineColors.get(lineId) ?? '#0a7a3c';
 
         const marker = L.circleMarker(latlng, {
           radius:      5,
@@ -50,14 +51,16 @@ export class MapView {
           color,
           weight:      2,
           fillOpacity: 1,
-          // Slightly larger hit area for touch
           interactive: true,
         });
 
-        marker.bindPopup(stationPopupHtml(name, desc), {
-          maxWidth: 220,
-          className: 'quero-popup',
-        });
+        marker.bindPopup(
+          stationPopupHtml(name, desc, {
+            pop: p.populacao_milhoes ?? null,
+            pib: p.pib_brl_bilhoes  ?? null,
+          }),
+          { maxWidth: 240, className: 'quero-popup' }
+        );
 
         if (name) marker.bindTooltip(name, { direction: 'top', offset: [0, -6] });
 
@@ -146,9 +149,9 @@ export class MapView {
 
 /**
  * Build popup HTML for a station.
- * Extracts line badges (with correct bg/fg colors) from the umap description HTML.
+ * `stats` may contain `pop` (populacao_milhoes) and/or `pib` (pib_brl_bilhoes).
  */
-function stationPopupHtml(name, description) {
+function stationPopupHtml(name, description, stats = {}) {
   const badges = parseLineBadges(description);
 
   const badgesHtml = badges
@@ -159,10 +162,22 @@ function stationPopupHtml(name, description) {
     )
     .join('');
 
+  const { pop, pib } = stats;
+  const hasStats = pop != null || pib != null;
+
+  const statsHtml = hasStats
+    ? `<hr class="popup-divider" />` +
+      `<div class="popup-stats">` +
+      (pop != null ? `<div class="popup-stat"><span class="stat-label">Pop.</span><span>${pop.toLocaleString('pt-BR')}M hab.</span></div>` : '') +
+      (pib != null ? `<div class="popup-stat"><span class="stat-label">PIB</span><span>R$&nbsp;${pib.toLocaleString('pt-BR')}B</span></div>` : '') +
+      `</div>`
+    : '';
+
   return (
     `<div class="quero-popup-inner">` +
     `<strong>${escapeHtml(name || 'Estação')}</strong>` +
     (badgesHtml ? `<div style="margin-top:6px">${badgesHtml}</div>` : '') +
+    statsHtml +
     `</div>`
   );
 }
