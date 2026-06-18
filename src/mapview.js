@@ -69,15 +69,12 @@ export class MapView {
         if (getStatsForNode) {
           const [lng, lat] = feature.geometry.coordinates;
           marker.on('popupopen', () => {
-            const r30 = getStatsForNode(lat, lng, 30 * 60);
-            const r45 = getStatsForNode(lat, lng, 45 * 60);
-            const r60 = getStatsForNode(lat, lng, 60 * 60);
-            marker.getPopup().setContent(
-              stationPopupHtml(name, desc, {
-                ...baseStats,
-                reachable: { 30: r30, 45: r45, 60: r60 },
-              })
-            );
+            const reachable = getStatsForNode(lat, lng);
+            if (reachable) {
+              marker.getPopup().setContent(
+                stationPopupHtml(name, desc, { ...baseStats, reachable })
+              );
+            }
           });
         }
 
@@ -245,7 +242,7 @@ function stationPopupHtml(name, description, stats = {}) {
       `<div class="popup-stat-heading">Alcance em tempo real</div>` +
       `<div class="popup-stats">` +
       Object.entries(reachable).map(([min, count]) =>
-        `<div class="popup-stat"><span class="stat-label">${min} min</span><span>${count} estações</span></div>`
+        `<div class="popup-stat"><span class="stat-label">${formatMinLabel(Number(min))}</span><span>${count} estações</span></div>`
       ).join('') +
       `</div>`
     : '';
@@ -291,4 +288,10 @@ function escapeHtml(value) {
 
 function safeCssColor(value, fallback) {
   return /^#[0-9a-fA-F]{3,8}$/.test(String(value)) ? value : fallback;
+}
+
+function formatMinLabel(min) {
+  if (min >= 60 && min % 60 === 0) return `${min / 60}h`;
+  if (min >= 60) return `${Math.floor(min / 60)}h ${min % 60}min`;
+  return `${min} min`;
 }

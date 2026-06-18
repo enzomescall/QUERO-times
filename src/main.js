@@ -32,11 +32,12 @@ const TAB_CONFIG = {
 // ── State ──────────────────────────────────────────────────────────────────
 const networks = { metro: null, hsr: null, custom: null };
 const geojsons = { metro: null, hsr: null, custom: null };
-let activeTab   = 'metro';
-let mapView     = null;
-let originPoint = null;
-let destPoint   = null;
-let docsLoaded  = false;
+let activeTab        = 'metro';
+let mapView          = null;
+let originPoint      = null;
+let destPoint        = null;
+let docsLoaded       = false;
+let activeThresholds = [30, 45, 60];
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const appEl          = document.getElementById('app');
@@ -88,7 +89,7 @@ function applyTabLayout(tab) {
 async function loadNetwork(tab) {
   if (tab === 'custom') {
     if (networks.custom) {
-      mapView.renderNetwork(geojsons.custom, networks.custom.lineColors, makeStatsCallback(networks.custom, getParams()));
+      mapView.renderNetwork(geojsons.custom, networks.custom.lineColors, makeStatsCallback(networks.custom, getParams(), activeThresholds));
       mapView.fitToNetwork(geojsons.custom);
       updateParamVisibility(networks.custom);
       applyNetworkDefaults(networks.custom, 'custom');
@@ -102,7 +103,7 @@ async function loadNetwork(tab) {
   }
 
   if (networks[tab]) {
-    mapView.renderNetwork(geojsons[tab], networks[tab].lineColors, makeStatsCallback(networks[tab], getParams()));
+    mapView.renderNetwork(geojsons[tab], networks[tab].lineColors, makeStatsCallback(networks[tab], getParams(), activeThresholds));
     mapView.fitToNetwork(geojsons[tab]);
     updateParamVisibility(networks[tab]);
     applyNetworkDefaults(networks[tab], tab);
@@ -122,7 +123,7 @@ async function loadNetwork(tab) {
     networks[tab] = net;
     geojsons[tab] = geojson;
 
-    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams()));
+    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams(), activeThresholds));
     mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
     applyNetworkDefaults(net, tab);
@@ -138,6 +139,7 @@ function applyNetworkDefaults(network, tab) {
   const setInput = (id, val) => { if (val != null) document.getElementById(id).value = val; };
 
   cmpNetworkLabel.textContent = sp.networkName ?? TAB_CONFIG[tab]?.networkLabel ?? 'Rede';
+  activeThresholds = sp.reachabilityThresholdsMin ?? [30, 45, 60];
 
   setInput('train-speed',      sp.trainSpeedKph);
   setInput('dwell-time',       sp.dwellTimeS);
@@ -187,7 +189,7 @@ async function handleGeojsonFile(file) {
 
     // Switch view: hide docs, show map + routing UI
     applyTabLayout('custom');
-    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams()));
+    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams(), activeThresholds));
     mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
     applyNetworkDefaults(net, 'custom');
@@ -379,17 +381,21 @@ reverseBtn.addEventListener('click', () => {
 });
 
 // ── Station stats callback ─────────────────────────────────────────────────
-function makeStatsCallback(network, params) {
-  return function(lat, lng, maxTimeS) {
+function makeStatsCallback(network, params, thresholds) {
+  return function(lat, lng) {
     const { node } = network.nearestNode(lat, lng);
-    if (!node) return 0;
-    const iso = computeIsochrone(network, node.id, params, maxTimeS);
-    let count = 0;
-    for (const [nodeId] of iso) {
-      const n = network.nodes.get(nodeId);
-      if (n && n.name && n.id !== node.id) count++;
+    if (!node) return null;
+    const result = {};
+    for (const min of thresholds) {
+      const iso = computeIsochrone(network, node.id, params, min * 60);
+      let count = 0;
+      for (const [nodeId] of iso) {
+        const n = network.nodes.get(nodeId);
+        if (n && n.name && n.id !== node.id) count++;
+      }
+      result[min] = count;
     }
-    return count;
+    return result;
   };
 }
 

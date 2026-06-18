@@ -3,7 +3,8 @@
   "network_defaults": {
     "accel_ms2": 0.5,
     "walk_speed_kph": 4.5,
-    "transfer_penalty_min": 15
+    "transfer_penalty_min": 15,
+    "reachability_thresholds_min": [120, 240, 480]
   },
   "features": [
     {

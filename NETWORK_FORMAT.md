@@ -22,11 +22,14 @@ O arquivo deve ser um `FeatureCollection` GeoJSON válido. Você também pode in
 
 Todos os campos em `network_defaults` são opcionais. Quando presentes, preenchem automaticamente os controles laterais ao carregar a rede — o usuário pode alterá-los livremente depois.
 
+`reachability_thresholds_min` define os três limites de tempo (em minutos) mostrados no popup de cada estação como "X estações alcançáveis". O padrão é `[30, 45, 60]` para redes metro/suburbanas. Para redes de alta velocidade, use `[120, 240, 480]` (2h, 4h, 8h). Valores ≥ 60 que sejam múltiplos de 60 são exibidos como "2h", "4h" etc.
+
 `traffic_multiplier` escala o tempo de carro retornado pelo OSRM (que assume fluxo livre, sem congestionamento). Um valor de `1.8` significa "dirigir leva 80% mais tempo no trânsito real do que o OSRM estima." Para o horário de pico do Rio de Janeiro, valores entre 1,5 e 2,5 são realistas. Deixe em `1.0` (padrão) para uma comparação conservadora.
 
 | Campo | Unidade | Controle lateral |
 |---|---|---|
 | `network_name` | texto (ex.: `"TAV"`) | Rótulo no painel de comparação |
+| `reachability_thresholds_min` | array de inteiros (ex.: `[30, 45, 60]`) | Limites de tempo no popup de estação |
 | `accel_ms2` | m/s² | Aceleração |
 | `walk_speed_kph` | km/h | Velocidade a pé |
 | `transfer_penalty_min` | minutos | Penalidade de baldeação |
@@ -175,6 +178,7 @@ Apenas o primeiro `LineString` de cada tipo (metro / expresso) que declarar uma 
 | Campo GeoJSON | Aplica-se a | Controle lateral |
 |---|---|---|
 | `network_defaults.network_name` | Ambos | Rótulo no painel de comparação (ex.: "TAV", "QUERO") |
+| `network_defaults.reachability_thresholds_min` | Ambos | Limites de alcance nos popups de estação (ex.: `[30, 45, 60]` ou `[120, 240, 480]`) |
 | `network_defaults.accel_ms2` | Ambos | Aceleração (m/s²) |
 | `network_defaults.walk_speed_kph` | Ambos | Velocidade a pé (km/h) |
 | `network_defaults.transfer_penalty_min` | Ambos | Penalidade de baldeação (min) |
