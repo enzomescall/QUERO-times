@@ -272,6 +272,7 @@ TRACK_PARAMS = {
     "LEX-10 — Linha Expressa Triângulo":             (280, 180, 60),
     "LEX-11 — Linha Expressa Minas–São Paulo":       (250, 180, 60),
     "LEX-12 — Linha Expressa Londrina":              (250, 180, 60),
+    "LEX-12 — Ramal Paraguai":                       (200, 180, 60),
 }
 
 features = []

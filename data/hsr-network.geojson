@@ -1129,6 +1129,38 @@
     {
       "type": "Feature",
       "properties": {
+        "name": "VILLARRICA",
+        "description": "<span style=\"background-color: #3d405b\"><span style=\"color:#ffffff\">**Linha 12**</span></span>",
+        "populacao_milhoes": 0.078,
+        "pib_brl_bilhoes": 1.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4493,
+          -25.7809
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "ASUNCIÓN",
+        "description": "<span style=\"background-color: #3d405b\"><span style=\"color:#ffffff\">**Linha 12**</span></span>",
+        "populacao_milhoes": 0.52,
+        "pib_brl_bilhoes": 25.0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.3333,
+          -25.2867
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "name": "LEX-01 — Linha Expressa Litoral",
         "linha": "1",
         "speed": 280,
@@ -3166,6 +3198,68 @@
           [
             -54.585,
             -25.5447
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "LEX-12 — Ramal Paraguai",
+        "linha": "12",
+        "speed": 200,
+        "dwell_s": 180,
+        "headway_min": 60,
+        "stroke": "#3d405b",
+        "stroke-width": 3,
+        "stroke-opacity": 1
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -54.585,
+            -25.5447
+          ],
+          [
+            -54.9598,
+            -25.6118
+          ],
+          [
+            -55.3391,
+            -25.6354
+          ],
+          [
+            -55.6953,
+            -25.6972
+          ],
+          [
+            -56.0783,
+            -25.7255
+          ],
+          [
+            -56.4493,
+            -25.7809
+          ],
+          [
+            -56.6091,
+            -25.6746
+          ],
+          [
+            -56.7979,
+            -25.5717
+          ],
+          [
+            -56.9624,
+            -25.4779
+          ],
+          [
+            -57.1547,
+            -25.3885
+          ],
+          [
+            -57.3333,
+            -25.2867
           ]
         ]
       }
