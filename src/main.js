@@ -10,13 +10,13 @@ import { fetchDrivingTimeS } from './compare.js';
 // ── Per-tab config ─────────────────────────────────────────────────────────
 const TAB_CONFIG = {
   metro: {
-    geojsonPath:  '/data/network.geojson',
+    geojsonPath:  `${import.meta.env.BASE_URL}data/network.geojson`,
     title:        'Rede QUERO',
     subtitle:     'Exemplo: rede proposta do Rio metropolitano',
     networkLabel: 'QUERO',
   },
   hsr: {
-    geojsonPath:  '/data/hsr-network.geojson',
+    geojsonPath:  `${import.meta.env.BASE_URL}data/hsr-network.geojson`,
     title:        'Rede TAV',
     subtitle:     'Exemplo: alta velocidade proposta',
     networkLabel: 'TAV',
@@ -177,7 +177,7 @@ function updateParamVisibility(network) {
 async function loadDocs() {
   if (docsLoaded) return;
   try {
-    const res = await fetch('/NETWORK_FORMAT.md');
+    const res = await fetch(`${import.meta.env.BASE_URL}NETWORK_FORMAT.md`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const md = await res.text();
     docsContent.innerHTML = marked.parse(md);
