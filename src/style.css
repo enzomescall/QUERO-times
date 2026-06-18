@@ -705,3 +705,58 @@ details .param:last-child { margin-bottom: 0; }
 }
 
 .btn-secondary:hover { background: var(--surface-2); }
+
+/* ── Error modal ── */
+#error-modal {
+  position: fixed;
+  left: var(--sidebar-w);
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 2000;
+}
+
+#error-modal[hidden] { display: none; }
+
+.error-modal-box {
+  background: white;
+  border-radius: 10px;
+  padding: 20px 20px 20px 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-left: 4px solid #dc2626;
+  max-width: 360px;
+  width: calc(100% - 48px);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+#error-modal-msg {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #991b1b;
+  margin: 0;
+}
+
+#error-modal-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 2px;
+  margin-top: -2px;
+}
+
+#error-modal-close:hover { color: var(--text); }
+
+@media (max-width: 640px) {
+  #error-modal { left: 0; top: 45dvh; bottom: auto; align-items: flex-start; padding-top: 12px; }
+}

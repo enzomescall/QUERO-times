@@ -63,6 +63,9 @@ const resultSummary  = document.getElementById('result-summary');
 const resultSteps    = document.getElementById('result-steps');
 const statusMsg      = document.getElementById('status-msg');
 const statusBar      = document.getElementById('status-bar');
+const errorModal     = document.getElementById('error-modal');
+const errorModalMsg  = document.getElementById('error-modal-msg');
+const errorModalClose = document.getElementById('error-modal-close');
 const mapEl          = document.getElementById('map');
 const docsPanel      = document.getElementById('docs-panel');
 const docsContent    = document.getElementById('docs-content');
@@ -418,8 +421,8 @@ function getParams() {
 // ── Route planning ─────────────────────────────────────────────────────────
 planBtn.addEventListener('click', async () => {
   const network = networks[activeTab];
-  if (!network) { alert('Rede ainda não carregada.'); return; }
-  if (!originPoint || !destPoint) { alert('Selecione origem e destino.'); return; }
+  if (!network) { setStatus('Rede ainda não carregada.', true); return; }
+  if (!originPoint || !destPoint) { setStatus('Selecione origem e destino.', true); return; }
 
   planBtn.disabled = true;
   setStatus('Calculando rota...');
@@ -552,7 +555,14 @@ function renderComparisonError() {
 function setStatus(msg, isError = false) {
   statusMsg.textContent = msg;
   statusBar.classList.toggle('error', isError);
+  if (isError) {
+    errorModalMsg.textContent = msg;
+    errorModal.hidden = false;
+  }
 }
+
+errorModalClose.addEventListener('click', () => { errorModal.hidden = true; });
+errorModal.addEventListener('click', e => { if (e.target === errorModal) errorModal.hidden = true; });
 
 // ── Isochrone ──────────────────────────────────────────────────────────────
 document.getElementById('iso-btn').addEventListener('click', () => {
@@ -567,19 +577,12 @@ document.getElementById('iso-btn').addEventListener('click', () => {
 
     setStatus('Calculando isócrona...');
     const params = getParams();
-    console.log('[iso] params:', params, 'maxS:', isoMaxS, 'origin node:', node.id, node.name);
-
     const result = computeIsochrone(network, node.id, params, isoMaxS);
-    console.log('[iso] result size:', result.size);
-
     const namedCount = [...result.keys()].filter(id => network.nodes.get(id)?.name).length;
-    console.log('[iso] named stations reachable:', namedCount);
-
     mapView.renderIsochrone(result, network.nodes, isoMaxS);
     setStatus(`Isócrona: ${namedCount} estações alcançáveis em ${Math.round(isoMaxS / 60)}min`);
   } catch (err) {
     setStatus(`Erro na isócrona: ${err.message}`, true);
-    console.error('[iso] error:', err);
   }
 });
 

@@ -156,6 +156,14 @@
 
       <!-- Map and docs panel share the same flex slot; only one is visible at a time -->
       <div id="map"></div>
+
+      <!-- Error modal — overlays the map, closed by button or clicking backdrop -->
+      <div id="error-modal" hidden aria-modal="true" role="alertdialog">
+        <div class="error-modal-box">
+          <p id="error-modal-msg"></p>
+          <button id="error-modal-close" aria-label="Fechar">×</button>
+        </div>
+      </div>
       <div id="docs-panel" hidden>
         <div id="docs-content"></div>
       </div>
