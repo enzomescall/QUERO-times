@@ -47,6 +47,7 @@ export class TransitNetwork {
       walkSpeedKph:       null,
       transferPenaltyMin: null,
       trafficMultiplier:  null,
+      networkName:        null,
     };
 
     this._hasMetroLines   = false;
@@ -81,6 +82,7 @@ export class TransitNetwork {
     if (nd.walk_speed_kph       != null) this.suggestedParams.walkSpeedKph      = num(nd.walk_speed_kph);
     if (nd.transfer_penalty_min != null) this.suggestedParams.transferPenaltyMin = num(nd.transfer_penalty_min);
     if (nd.traffic_multiplier   != null) this.suggestedParams.trafficMultiplier  = num(nd.traffic_multiplier);
+    if (nd.network_name         != null) this.suggestedParams.networkName        = String(nd.network_name);
 
     // ── Pass 1 — station nodes ────────────────────────────────────────────
     for (const f of stationFeatures) {

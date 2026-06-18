@@ -26,6 +26,7 @@ All fields in `network_defaults` are optional. When present, they pre-fill the c
 
 | Field | Unit | Sidebar slider |
 |---|---|---|
+| `network_name` | string (e.g. `"TAV"`) | Label shown in the comparison panel |
 | `accel_ms2` | m/s² | Aceleração |
 | `walk_speed_kph` | km/h | Velocidade a pé |
 | `transfer_penalty_min` | minutes | Penalidade de baldeação |
@@ -173,6 +174,7 @@ Only the first `LineString` of each type (metro / express) that declares a given
 
 | GeoJSON field | Applies to | Sidebar input |
 |---|---|---|
+| `network_defaults.network_name` | Both | Comparison panel label (e.g. "TAV", "QUERO") |
 | `network_defaults.accel_ms2` | Both | Aceleração (m/s²) |
 | `network_defaults.walk_speed_kph` | Both | Velocidade a pé (km/h) |
 | `network_defaults.transfer_penalty_min` | Both | Penalidade de baldeação (min) |

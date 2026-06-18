@@ -9,19 +9,22 @@ import { fetchDrivingTimeS } from './compare.js';
 // ── Per-tab config ─────────────────────────────────────────────────────────
 const TAB_CONFIG = {
   metro: {
-    geojsonPath: '/data/network.geojson',
-    title:    'QUERO Transporte',
-    subtitle: 'Planejador de rotas — rede proposta',
+    geojsonPath:  '/data/network.geojson',
+    title:        'QUERO Transporte',
+    subtitle:     'Planejador de rotas — rede proposta',
+    networkLabel: 'QUERO',
   },
   hsr: {
-    geojsonPath: '/data/hsr-network.geojson',
-    title:    'Alta Velocidade',
-    subtitle: 'Planejador de rotas — TAV proposto',
+    geojsonPath:  '/data/hsr-network.geojson',
+    title:        'Alta Velocidade',
+    subtitle:     'Planejador de rotas — TAV proposto',
+    networkLabel: 'TAV',
   },
   custom: {
-    geojsonPath: null, // loaded from file upload
-    title:    'Rede Personalizada',
-    subtitle: 'Carregue seu próprio GeoJSON',
+    geojsonPath:  null,
+    title:        'Rede Personalizada',
+    subtitle:     'Carregue seu próprio GeoJSON',
+    networkLabel: 'Rede',
   },
 };
 
@@ -49,6 +52,7 @@ const planBtn        = document.getElementById('plan-btn');
 const resultsSection    = document.getElementById('results');
 const resultComparison  = document.getElementById('result-comparison');
 const cmpQueroTime      = document.getElementById('cmp-quero-time');
+const cmpNetworkLabel   = document.getElementById('cmp-network-label');
 const cmpDriveTime      = document.getElementById('cmp-drive-time');
 const cmpDelta          = document.getElementById('cmp-delta');
 const resultSummary  = document.getElementById('result-summary');
@@ -84,7 +88,7 @@ async function loadNetwork(tab) {
       mapView.renderNetwork(geojsons.custom, networks.custom.lineColors);
       mapView.fitToNetwork(geojsons.custom);
       updateParamVisibility(networks.custom);
-      applyNetworkDefaults(networks.custom);
+      applyNetworkDefaults(networks.custom, 'custom');
       const n = networks.custom;
       setStatus(`Rede carregada — ${n.nodes.size} estações, ${n.edges.length / 2} segmentos`);
     } else {
@@ -98,7 +102,7 @@ async function loadNetwork(tab) {
     mapView.renderNetwork(geojsons[tab], networks[tab].lineColors);
     mapView.fitToNetwork(geojsons[tab]);
     updateParamVisibility(networks[tab]);
-    applyNetworkDefaults(networks[tab]);
+    applyNetworkDefaults(networks[tab], tab);
     const n = networks[tab];
     setStatus(`Rede carregada — ${n.nodes.size} estações, ${n.edges.length / 2} segmentos`);
     return;
@@ -118,7 +122,7 @@ async function loadNetwork(tab) {
     mapView.renderNetwork(geojson, net.lineColors);
     mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
-    applyNetworkDefaults(net);
+    applyNetworkDefaults(net, tab);
     setStatus(`Rede carregada — ${net.nodes.size} estações, ${net.edges.length / 2} segmentos`);
   } catch (err) {
     setStatus(`Erro ao carregar rede: ${err.message}`, true);
@@ -126,9 +130,12 @@ async function loadNetwork(tab) {
   }
 }
 
-function applyNetworkDefaults(network) {
+function applyNetworkDefaults(network, tab) {
   const sp = network.suggestedParams;
   const setInput = (id, val) => { if (val != null) document.getElementById(id).value = val; };
+
+  cmpNetworkLabel.textContent = sp.networkName ?? TAB_CONFIG[tab]?.networkLabel ?? 'Rede';
+
   setInput('train-speed',      sp.trainSpeedKph);
   setInput('dwell-time',       sp.dwellTimeS);
   setInput('headway',          sp.headwayMin);
@@ -180,7 +187,7 @@ async function handleGeojsonFile(file) {
     mapView.renderNetwork(geojson, net.lineColors);
     mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
-    applyNetworkDefaults(net);
+    applyNetworkDefaults(net, 'custom');
     setStatus(`Rede carregada — ${net.nodes.size} estações, ${net.edges.length / 2} segmentos`);
   } catch (err) {
     setStatus(`Erro ao ler GeoJSON: ${err.message}`, true);
