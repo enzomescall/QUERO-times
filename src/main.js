@@ -50,6 +50,8 @@ const destInput      = document.getElementById('destination');
 const originSugg     = document.getElementById('origin-suggestions');
 const destSugg       = document.getElementById('destination-suggestions');
 const planBtn        = document.getElementById('plan-btn');
+const copyLinkBtn    = document.getElementById('copy-link-btn');
+const reverseBtn     = document.getElementById('reverse-btn');
 const resultsSection    = document.getElementById('results');
 const resultComparison  = document.getElementById('result-comparison');
 const cmpQueroTime      = document.getElementById('cmp-quero-time');
@@ -233,6 +235,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     mapView.clearIsochrone();
     resultsSection.hidden = true;
     resultComparison.hidden = true;
+    copyLinkBtn.hidden = true;
 
     applyTabLayout(tab);
     await loadNetwork(tab);
@@ -245,6 +248,46 @@ async function init() {
   appEl.dataset.tab = activeTab;
   applyTabLayout(activeTab);
   await loadNetwork(activeTab);
+  await restoreFromUrl();
+}
+
+async function restoreFromUrl() {
+  const p = new URLSearchParams(location.search);
+  const tab  = p.get('tab');
+  const olat = parseFloat(p.get('olat')), olng = parseFloat(p.get('olng'));
+  const dlat = parseFloat(p.get('dlat')), dlng = parseFloat(p.get('dlng'));
+  if (!tab || isNaN(olat) || isNaN(olng) || isNaN(dlat) || isNaN(dlng)) return;
+
+  // Switch to the right tab if needed
+  if (tab !== activeTab && TAB_CONFIG[tab]) {
+    const tabBtn = document.querySelector(`.tab[data-tab="${tab}"]`);
+    if (tabBtn) {
+      // Manually switch tab without resetting points (we'll set them below)
+      activeTab = tab;
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+        t.setAttribute('aria-selected', String(t.dataset.tab === tab));
+      });
+      appEl.dataset.tab = tab;
+      const cfg = TAB_CONFIG[tab];
+      headerTitle.innerHTML = cfg.title.includes(' ')
+        ? cfg.title.replace(' ', ' <span>') + '</span>'
+        : cfg.title;
+      headerSub.textContent = cfg.subtitle;
+      applyTabLayout(tab);
+      await loadNetwork(tab);
+    }
+  }
+
+  // Restore points
+  originPoint = { lat: olat, lng: olng, displayName: p.get('oname') ?? '' };
+  destPoint   = { lat: dlat, lng: dlng, displayName: p.get('dname') ?? '' };
+
+  originInput.value = originPoint.displayName || `${olat.toFixed(5)}, ${olng.toFixed(5)}`;
+  destInput.value   = destPoint.displayName   || `${dlat.toFixed(5)}, ${dlng.toFixed(5)}`;
+
+  mapView.setMarkers(originPoint, destPoint);
+  planBtn.click();
 }
 
 // ── Autocomplete ───────────────────────────────────────────────────────────
@@ -295,6 +338,45 @@ function hideSugg(list) { list.hidden = true; list.replaceChildren(); }
 
 wireAutocomplete(originInput, originSugg, r => { originPoint = r; mapView.setMarkers(originPoint, destPoint); });
 wireAutocomplete(destInput,   destSugg,   r => { destPoint   = r; mapView.setMarkers(originPoint, destPoint); });
+
+// ── Copy-link button ───────────────────────────────────────────────────────
+copyLinkBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(location.href);
+    const prev = copyLinkBtn.textContent;
+    copyLinkBtn.textContent = 'Copiado!';
+    setTimeout(() => { copyLinkBtn.textContent = prev; }, 2000);
+  } catch {
+    // Fallback: select a temporary input
+    const tmp = document.createElement('input');
+    tmp.value = location.href;
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    copyLinkBtn.textContent = 'Copiado!';
+    setTimeout(() => { copyLinkBtn.textContent = '📋'; }, 2000);
+  }
+});
+
+// ── Reverse route button ───────────────────────────────────────────────────
+reverseBtn.addEventListener('click', () => {
+  if (!originPoint && !destPoint) return;
+
+  // Swap state
+  [originPoint, destPoint] = [destPoint, originPoint];
+
+  // Swap input text
+  const tmp = originInput.value;
+  originInput.value = destInput.value;
+  destInput.value   = tmp;
+
+  // Update map markers
+  mapView.setMarkers(originPoint, destPoint);
+
+  // Re-run route if one was already showing
+  if (originPoint && destPoint) planBtn.click();
+});
 
 // ── Params helper ──────────────────────────────────────────────────────────
 function getParams() {
@@ -350,6 +432,20 @@ planBtn.addEventListener('click', async () => {
   renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode);
   setStatus(`Rota calculada — ${formatDuration(totalS)} no total`);
   planBtn.disabled = false;
+
+  // Push shareable URL
+  const url = new URL(location.href);
+  url.searchParams.set('tab',   activeTab);
+  url.searchParams.set('olat',  originPoint.lat);
+  url.searchParams.set('olng',  originPoint.lng);
+  url.searchParams.set('oname', originPoint.displayName ?? '');
+  url.searchParams.set('dlat',  destPoint.lat);
+  url.searchParams.set('dlng',  destPoint.lng);
+  url.searchParams.set('dname', destPoint.displayName ?? '');
+  history.pushState({}, '', url);
+
+  // Show copy-link button
+  copyLinkBtn.hidden = false;
 
   // Fetch driving comparison concurrently (doesn't block route display)
   const trafficMult = parseFloat(document.getElementById('traffic-multiplier').value) || 1.0;

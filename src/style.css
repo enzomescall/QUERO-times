@@ -560,11 +560,65 @@ details .param:last-child { margin-bottom: 0; }
 
 /* ── Map ── */
 
+/* ── Plan row (plan button + copy-link button) ── */
+.plan-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin-top: 4px;
+}
+
+.plan-row #plan-btn {
+  flex: 1;
+  margin-top: 0;
+}
+
+.plan-row #copy-link-btn {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  font-size: 15px;
+}
+
+/* ── Reverse row ── */
+.reverse-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 2px;
+}
+
+#reverse-btn {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+#reverse-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
 /* ── Responsive ── */
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   #app { flex-direction: column; }
-  #sidebar { width: 100%; min-width: unset; height: 50dvh; }
-  #map { height: 50dvh; }
+  #sidebar {
+    width: 100%;
+    min-width: unset;
+    height: 55dvh;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    order: 2;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+  }
+  #map, #docs-panel { height: 45dvh; order: 1; }
+  header { padding: 12px 16px 10px; }
+  header h1 { font-size: 18px; }
+  #tab-bar .tab { font-size: 11px; padding: 8px 4px; }
 }
 
 /* ── Leaflet popup overrides ── */
