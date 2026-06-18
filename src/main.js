@@ -48,6 +48,7 @@ const destSugg       = document.getElementById('destination-suggestions');
 const planBtn        = document.getElementById('plan-btn');
 const resultsSection    = document.getElementById('results');
 const resultComparison  = document.getElementById('result-comparison');
+const cmpQueroTime      = document.getElementById('cmp-quero-time');
 const cmpDriveTime      = document.getElementById('cmp-drive-time');
 const cmpDelta          = document.getElementById('cmp-delta');
 const resultSummary  = document.getElementById('result-summary');
@@ -341,10 +342,10 @@ planBtn.addEventListener('click', async () => {
   planBtn.disabled = false;
 
   // Fetch driving comparison concurrently (doesn't block route display)
-  showComparisonLoading();
+  showComparisonLoading(totalS);
   fetchDrivingTimeS(originPoint.lat, originPoint.lng, destPoint.lat, destPoint.lng)
     .then(drivingS => renderComparison(totalS, drivingS))
-    .catch(() => hideComparison());
+    .catch(() => renderComparisonError());
 });
 
 function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode) {
@@ -381,31 +382,35 @@ function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode) {
 }
 
 // ── Real-world comparison ──────────────────────────────────────────────────
-function showComparisonLoading() {
+function showComparisonLoading(queroTotalS) {
   resultComparison.hidden = false;
+  cmpQueroTime.textContent = formatDuration(queroTotalS);
   cmpDriveTime.textContent = '...';
   cmpDelta.textContent = 'Buscando tempo de carro...';
   cmpDelta.className = 'cmp-delta loading';
 }
 
 function renderComparison(queroTotalS, drivingS) {
+  cmpQueroTime.textContent = formatDuration(queroTotalS);
   cmpDriveTime.textContent = formatDuration(drivingS);
   const deltaS = drivingS - queroTotalS;
   const absDelta = formatDuration(Math.abs(deltaS));
-  if (deltaS > 0) {
-    cmpDelta.textContent = `${absDelta} mais rápido que dirigir`;
+  if (deltaS > 30) {
+    cmpDelta.textContent = `⚡ ${absDelta} mais rápido que dirigir`;
     cmpDelta.className = 'cmp-delta faster';
-  } else if (deltaS < 0) {
-    cmpDelta.textContent = `${absDelta} mais lento que dirigir`;
+  } else if (deltaS < -30) {
+    cmpDelta.textContent = `🐢 ${absDelta} mais lento que dirigir`;
     cmpDelta.className = 'cmp-delta slower';
   } else {
-    cmpDelta.textContent = 'Mesmo tempo que dirigir';
-    cmpDelta.className = 'cmp-delta';
+    cmpDelta.textContent = 'Tempo similar ao de carro';
+    cmpDelta.className = 'cmp-delta neutral';
   }
 }
 
-function hideComparison() {
-  resultComparison.hidden = true;
+function renderComparisonError() {
+  cmpDriveTime.textContent = '—';
+  cmpDelta.textContent = 'Tempo de carro indisponível';
+  cmpDelta.className = 'cmp-delta loading';
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────

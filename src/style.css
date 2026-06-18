@@ -331,12 +331,25 @@ details .param:last-child { margin-bottom: 0; }
 /* ── Real-world comparison ── */
 #result-comparison {
   margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.cmp-heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  padding: 8px 12px 6px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  margin: 0;
 }
 
 .cmp-row {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
 }
 
 .cmp-card {
@@ -344,18 +357,22 @@ details .param:last-child { margin-bottom: 0; }
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  background: var(--surface-2);
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  padding: 12px 14px;
+  background: var(--surface);
 }
 
-.cmp-icon { font-size: 20px; line-height: 1; }
+.cmp-card + .cmp-card {
+  border-left: 1px solid var(--border);
+}
+
+.cmp-quero { background: color-mix(in srgb, var(--brand) 8%, white); }
+
+.cmp-icon { font-size: 22px; line-height: 1; }
 
 .cmp-info {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .cmp-label {
@@ -363,26 +380,30 @@ details .param:last-child { margin-bottom: 0; }
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .cmp-time {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
+  line-height: 1.1;
 }
+
+.cmp-quero .cmp-time { color: var(--brand); }
 
 .cmp-delta {
   font-size: 13px;
   font-weight: 600;
-  padding: 7px 12px;
-  border-radius: 6px;
+  padding: 8px 14px;
   text-align: center;
   margin: 0;
+  border-top: 1px solid var(--border);
 }
 
 .cmp-delta.faster { background: #dcfce7; color: #166534; }
 .cmp-delta.slower { background: #fef2f2; color: #991b1b; }
+.cmp-delta.neutral { background: #fef9c3; color: #854d0e; }
 .cmp-delta.loading { background: var(--surface-2); color: var(--text-muted); font-weight: 400; font-style: italic; }
 
 /* ── Status bar ── */
