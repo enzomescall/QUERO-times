@@ -22,6 +22,8 @@ The file must be a valid GeoJSON `FeatureCollection`. You can also include a top
 
 All fields in `network_defaults` are optional. When present, they pre-fill the corresponding sidebar sliders when the network loads — the user can still change them freely afterwards.
 
+`traffic_multiplier` scales the driving time returned by OSRM (which assumes free-flow, no congestion). A value of `1.8` means "driving takes 80% longer in real traffic than OSRM estimates." For Rio de Janeiro peak hours, values between 1.5 and 2.5 are realistic. Leave it at `1.0` (the default) for a conservative/baseline comparison.
+
 | Field | Unit | Sidebar slider |
 |---|---|---|
 | `accel_ms2` | m/s² | Aceleração |
@@ -174,6 +176,7 @@ Only the first `LineString` of each type (metro / express) that declares a given
 | `network_defaults.accel_ms2` | Both | Aceleração (m/s²) |
 | `network_defaults.walk_speed_kph` | Both | Velocidade a pé (km/h) |
 | `network_defaults.transfer_penalty_min` | Both | Penalidade de baldeação (min) |
+| `network_defaults.traffic_multiplier` | Both | Multiplicador de tráfego (×) |
 | `speed` on numeric `LineString` | Metro | Velocidade máxima — metro |
 | `dwell_s` on numeric `LineString` | Metro | Tempo de parada — metro |
 | `headway_min` on numeric `LineString` | Metro | Frequência — metro |
