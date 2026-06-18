@@ -31,7 +31,7 @@ export class MapView {
    * Render the full transit network from GeoJSON.
    * `lineColors` is a Map<lineId, hexColor> from the network parser.
    */
-  renderNetwork(geojson, lineColors = new Map()) {
+  renderNetwork(geojson, lineColors = new Map(), getStatsForNode = null) {
     this._networkLayer.clearLayers();
 
     L.geoJSON(geojson, {
@@ -56,13 +56,30 @@ export class MapView {
           interactive: true,
         });
 
+        const baseStats = {
+          pop: p.populacao_milhoes ?? null,
+          pib: p.pib_brl_bilhoes  ?? null,
+        };
+
         marker.bindPopup(
-          stationPopupHtml(name, desc, {
-            pop: p.populacao_milhoes ?? null,
-            pib: p.pib_brl_bilhoes  ?? null,
-          }),
+          stationPopupHtml(name, desc, baseStats),
           { maxWidth: 240, className: 'quero-popup' }
         );
+
+        if (getStatsForNode) {
+          const [lng, lat] = feature.geometry.coordinates;
+          marker.on('popupopen', () => {
+            const r30 = getStatsForNode(lat, lng, 30 * 60);
+            const r45 = getStatsForNode(lat, lng, 45 * 60);
+            const r60 = getStatsForNode(lat, lng, 60 * 60);
+            marker.getPopup().setContent(
+              stationPopupHtml(name, desc, {
+                ...baseStats,
+                reachable: { 30: r30, 45: r45, 60: r60 },
+              })
+            );
+          });
+        }
 
         if (name) marker.bindTooltip(name, { direction: 'top', offset: [0, -6] });
 
@@ -212,7 +229,7 @@ function stationPopupHtml(name, description, stats = {}) {
     )
     .join('');
 
-  const { pop, pib } = stats;
+  const { pop, pib, reachable } = stats;
   const hasStats = pop != null || pib != null;
 
   const statsHtml = hasStats
@@ -223,11 +240,22 @@ function stationPopupHtml(name, description, stats = {}) {
       `</div>`
     : '';
 
+  const reachableHtml = reachable
+    ? `<hr class="popup-divider"/>` +
+      `<div class="popup-stat-heading">Alcance em tempo real</div>` +
+      `<div class="popup-stats">` +
+      Object.entries(reachable).map(([min, count]) =>
+        `<div class="popup-stat"><span class="stat-label">${min} min</span><span>${count} estações</span></div>`
+      ).join('') +
+      `</div>`
+    : '';
+
   return (
     `<div class="quero-popup-inner">` +
     `<strong>${escapeHtml(name || 'Estação')}</strong>` +
     (badgesHtml ? `<div style="margin-top:6px">${badgesHtml}</div>` : '') +
     statsHtml +
+    reachableHtml +
     `</div>`
   );
 }

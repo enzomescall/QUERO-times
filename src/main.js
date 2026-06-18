@@ -88,7 +88,7 @@ function applyTabLayout(tab) {
 async function loadNetwork(tab) {
   if (tab === 'custom') {
     if (networks.custom) {
-      mapView.renderNetwork(geojsons.custom, networks.custom.lineColors);
+      mapView.renderNetwork(geojsons.custom, networks.custom.lineColors, makeStatsCallback(networks.custom, getParams()));
       mapView.fitToNetwork(geojsons.custom);
       updateParamVisibility(networks.custom);
       applyNetworkDefaults(networks.custom, 'custom');
@@ -102,7 +102,7 @@ async function loadNetwork(tab) {
   }
 
   if (networks[tab]) {
-    mapView.renderNetwork(geojsons[tab], networks[tab].lineColors);
+    mapView.renderNetwork(geojsons[tab], networks[tab].lineColors, makeStatsCallback(networks[tab], getParams()));
     mapView.fitToNetwork(geojsons[tab]);
     updateParamVisibility(networks[tab]);
     applyNetworkDefaults(networks[tab], tab);
@@ -122,7 +122,7 @@ async function loadNetwork(tab) {
     networks[tab] = net;
     geojsons[tab] = geojson;
 
-    mapView.renderNetwork(geojson, net.lineColors);
+    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams()));
     mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
     applyNetworkDefaults(net, tab);
@@ -187,7 +187,7 @@ async function handleGeojsonFile(file) {
 
     // Switch view: hide docs, show map + routing UI
     applyTabLayout('custom');
-    mapView.renderNetwork(geojson, net.lineColors);
+    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams()));
     mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
     applyNetworkDefaults(net, 'custom');
@@ -377,6 +377,21 @@ reverseBtn.addEventListener('click', () => {
   // Re-run route if one was already showing
   if (originPoint && destPoint) planBtn.click();
 });
+
+// ── Station stats callback ─────────────────────────────────────────────────
+function makeStatsCallback(network, params) {
+  return function(lat, lng, maxTimeS) {
+    const { node } = network.nearestNode(lat, lng);
+    if (!node) return 0;
+    const iso = computeIsochrone(network, node.id, params, maxTimeS);
+    let count = 0;
+    for (const [nodeId] of iso) {
+      const n = network.nodes.get(nodeId);
+      if (n && n.name && n.id !== node.id) count++;
+    }
+    return count;
+  };
+}
 
 // ── Params helper ──────────────────────────────────────────────────────────
 function getParams() {
