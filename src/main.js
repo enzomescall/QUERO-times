@@ -4,6 +4,7 @@ import { findRoute } from './router.js';
 import { searchAddress } from './geocoding.js';
 import { MapView } from './mapview.js';
 import { walkTimeS, formatDuration } from './simulation.js';
+import { fetchDrivingTimeS } from './compare.js';
 
 // ── Per-tab config ─────────────────────────────────────────────────────────
 const TAB_CONFIG = {
@@ -45,7 +46,10 @@ const destInput      = document.getElementById('destination');
 const originSugg     = document.getElementById('origin-suggestions');
 const destSugg       = document.getElementById('destination-suggestions');
 const planBtn        = document.getElementById('plan-btn');
-const resultsSection = document.getElementById('results');
+const resultsSection    = document.getElementById('results');
+const resultComparison  = document.getElementById('result-comparison');
+const cmpDriveTime      = document.getElementById('cmp-drive-time');
+const cmpDelta          = document.getElementById('cmp-delta');
 const resultSummary  = document.getElementById('result-summary');
 const resultSteps    = document.getElementById('result-steps');
 const statusMsg      = document.getElementById('status-msg');
@@ -217,6 +221,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     hideSugg(originSugg); hideSugg(destSugg);
     mapView.clearRoute();
     resultsSection.hidden = true;
+    resultComparison.hidden = true;
 
     applyTabLayout(tab);
     await loadNetwork(tab);
@@ -334,6 +339,12 @@ planBtn.addEventListener('click', async () => {
   renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode);
   setStatus(`Rota calculada — ${formatDuration(totalS)} no total`);
   planBtn.disabled = false;
+
+  // Fetch driving comparison concurrently (doesn't block route display)
+  showComparisonLoading();
+  fetchDrivingTimeS(originPoint.lat, originPoint.lng, destPoint.lat, destPoint.lng)
+    .then(drivingS => renderComparison(totalS, drivingS))
+    .catch(() => hideComparison());
 });
 
 function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode) {
@@ -367,6 +378,34 @@ function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode) {
     li.append(iconEl, detailEl, timeEl);
     resultSteps.appendChild(li);
   }
+}
+
+// ── Real-world comparison ──────────────────────────────────────────────────
+function showComparisonLoading() {
+  resultComparison.hidden = false;
+  cmpDriveTime.textContent = '...';
+  cmpDelta.textContent = 'Buscando tempo de carro...';
+  cmpDelta.className = 'cmp-delta loading';
+}
+
+function renderComparison(queroTotalS, drivingS) {
+  cmpDriveTime.textContent = formatDuration(drivingS);
+  const deltaS = drivingS - queroTotalS;
+  const absDelta = formatDuration(Math.abs(deltaS));
+  if (deltaS > 0) {
+    cmpDelta.textContent = `${absDelta} mais rápido que dirigir`;
+    cmpDelta.className = 'cmp-delta faster';
+  } else if (deltaS < 0) {
+    cmpDelta.textContent = `${absDelta} mais lento que dirigir`;
+    cmpDelta.className = 'cmp-delta slower';
+  } else {
+    cmpDelta.textContent = 'Mesmo tempo que dirigir';
+    cmpDelta.className = 'cmp-delta';
+  }
+}
+
+function hideComparison() {
+  resultComparison.hidden = true;
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────

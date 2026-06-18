@@ -328,6 +328,63 @@ details .param:last-child { margin-bottom: 0; }
   white-space: nowrap;
 }
 
+/* ── Real-world comparison ── */
+#result-comparison {
+  margin-bottom: 12px;
+}
+
+.cmp-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cmp-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.cmp-icon { font-size: 20px; line-height: 1; }
+
+.cmp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cmp-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 500;
+}
+
+.cmp-time {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cmp-delta {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 6px;
+  text-align: center;
+  margin: 0;
+}
+
+.cmp-delta.faster { background: #dcfce7; color: #166534; }
+.cmp-delta.slower { background: #fef2f2; color: #991b1b; }
+.cmp-delta.loading { background: var(--surface-2); color: var(--text-muted); font-weight: 400; font-style: italic; }
+
 /* ── Status bar ── */
 #status-bar {
   margin-top: auto;
