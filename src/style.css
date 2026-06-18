@@ -70,6 +70,34 @@ header .subtitle {
   margin-top: 4px;
 }
 
+.header-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  letter-spacing: 0.2px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.header-source::after {
+  content: '↗';
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.header-source:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
 /* ── Tab bar ── */
 #tab-bar {
   display: flex;

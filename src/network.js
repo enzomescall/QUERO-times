@@ -49,6 +49,7 @@ export class TransitNetwork {
       trafficMultiplier:          null,
       networkName:                null,
       reachabilityThresholdsMin:  null,
+      networkHyperlink:           null,
     };
 
     this._hasMetroLines   = false;
@@ -86,6 +87,7 @@ export class TransitNetwork {
     if (nd.network_name         != null) this.suggestedParams.networkName        = String(nd.network_name);
     if (Array.isArray(nd.reachability_thresholds_min))
       this.suggestedParams.reachabilityThresholdsMin = nd.reachability_thresholds_min.map(Number).filter(n => !isNaN(n));
+    if (nd.hyperlink != null) this.suggestedParams.networkHyperlink = String(nd.hyperlink);
 
     // ── Pass 1 — station nodes ────────────────────────────────────────────
     for (const f of stationFeatures) {

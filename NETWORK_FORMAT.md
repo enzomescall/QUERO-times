@@ -29,6 +29,7 @@ Todos os campos em `network_defaults` são opcionais. Quando presentes, preenche
 | Campo | Unidade | Controle lateral |
 |---|---|---|
 | `network_name` | texto (ex.: `"TAV"`) | Rótulo no painel de comparação |
+| `hyperlink` | URL (ex.: `"https://querometro.com/"`) | Chip de fonte no cabeçalho do app |
 | `reachability_thresholds_min` | array de inteiros (ex.: `[30, 45, 60]`) | Limites de tempo no popup de estação |
 | `accel_ms2` | m/s² | Aceleração |
 | `walk_speed_kph` | km/h | Velocidade a pé |
@@ -178,6 +179,7 @@ Apenas o primeiro `LineString` de cada tipo (metro / expresso) que declarar uma 
 | Campo GeoJSON | Aplica-se a | Controle lateral |
 |---|---|---|
 | `network_defaults.network_name` | Ambos | Rótulo no painel de comparação (ex.: "TAV", "QUERO") |
+| `network_defaults.hyperlink` | Ambos | Chip de fonte no cabeçalho — link externo para o site da rede |
 | `network_defaults.reachability_thresholds_min` | Ambos | Limites de alcance nos popups de estação (ex.: `[30, 45, 60]` ou `[120, 240, 480]`) |
 | `network_defaults.accel_ms2` | Ambos | Aceleração (m/s²) |
 | `network_defaults.walk_speed_kph` | Ambos | Velocidade a pé (km/h) |

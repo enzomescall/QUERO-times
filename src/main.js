@@ -43,6 +43,7 @@ let activeThresholds = [30, 45, 60];
 const appEl          = document.getElementById('app');
 const headerTitle    = document.getElementById('header-title');
 const headerSub      = document.getElementById('header-subtitle');
+const headerSource   = document.getElementById('header-source-link');
 const uploadSection  = document.getElementById('upload-section');
 const uploadZone     = document.getElementById('upload-zone');
 const geojsonFile    = document.getElementById('geojson-file');
@@ -143,6 +144,15 @@ function applyNetworkDefaults(network, tab) {
 
   cmpNetworkLabel.textContent = sp.networkName ?? TAB_CONFIG[tab]?.networkLabel ?? 'Rede';
   activeThresholds = sp.reachabilityThresholdsMin ?? [30, 45, 60];
+
+  if (sp.networkHyperlink) {
+    const url = new URL(sp.networkHyperlink);
+    headerSource.href        = sp.networkHyperlink;
+    headerSource.textContent = url.hostname.replace(/^www\./, '');
+    headerSource.hidden      = false;
+  } else {
+    headerSource.hidden = true;
+  }
 
   setInput('train-speed',      sp.trainSpeedKph);
   setInput('dwell-time',       sp.dwellTimeS);
