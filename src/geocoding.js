@@ -6,7 +6,7 @@
 const BASE = 'https://nominatim.openstreetmap.org';
 const HEADERS = { 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' };
 
-// Bias results toward Rio de Janeiro metro area
+// Soft bias toward Rio de Janeiro metro area (bounded=0 so worldwide results still appear)
 const VIEWBOX = '-43.8,-23.1,-42.8,-22.7'; // W,S,E,N
 
 let lastRequestTime = 0;
@@ -34,7 +34,6 @@ export async function searchAddress(query) {
   url.searchParams.set('limit', '5');
   url.searchParams.set('viewbox', VIEWBOX);
   url.searchParams.set('bounded', '0');
-  url.searchParams.set('countrycodes', 'br');
 
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Nominatim error: ${res.status}`);
