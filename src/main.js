@@ -556,17 +556,31 @@ function setStatus(msg, isError = false) {
 
 // ── Isochrone ──────────────────────────────────────────────────────────────
 document.getElementById('iso-btn').addEventListener('click', () => {
-  const network = networks[activeTab];
-  if (!network) { setStatus('Rede ainda não carregada.', true); return; }
-  if (!originPoint) { setStatus('Insira uma origem primeiro.', true); return; }
+  try {
+    const network = networks[activeTab];
+    if (!network) { setStatus('Rede ainda não carregada.', true); return; }
+    if (!originPoint) { setStatus('Insira uma origem primeiro.', true); return; }
 
-  const isoMaxS = parseFloat(document.getElementById('iso-time').value) * 60;
-  const { node } = network.nearestNode(originPoint.lat, originPoint.lng);
-  if (!node) { setStatus('Não foi possível encontrar estação próxima.', true); return; }
+    const isoMaxS = parseFloat(document.getElementById('iso-time').value) * 60;
+    const { node } = network.nearestNode(originPoint.lat, originPoint.lng);
+    if (!node) { setStatus('Não foi possível encontrar estação próxima.', true); return; }
 
-  const result = computeIsochrone(network, node.id, getParams(), isoMaxS);
-  mapView.renderIsochrone(result, network.nodes, isoMaxS);
-  setStatus(`Isócrona calculada — ${result.size} nós alcançáveis em ${Math.round(isoMaxS / 60)}min`);
+    setStatus('Calculando isócrona...');
+    const params = getParams();
+    console.log('[iso] params:', params, 'maxS:', isoMaxS, 'origin node:', node.id, node.name);
+
+    const result = computeIsochrone(network, node.id, params, isoMaxS);
+    console.log('[iso] result size:', result.size);
+
+    const namedCount = [...result.keys()].filter(id => network.nodes.get(id)?.name).length;
+    console.log('[iso] named stations reachable:', namedCount);
+
+    mapView.renderIsochrone(result, network.nodes, isoMaxS);
+    setStatus(`Isócrona: ${namedCount} estações alcançáveis em ${Math.round(isoMaxS / 60)}min`);
+  } catch (err) {
+    setStatus(`Erro na isócrona: ${err.message}`, true);
+    console.error('[iso] error:', err);
+  }
 });
 
 document.getElementById('iso-clear-btn').addEventListener('click', () => {
