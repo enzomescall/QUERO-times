@@ -27,6 +27,7 @@ All fields in `network_defaults` are optional. When present, they pre-fill the c
 | `accel_ms2` | m/s² | Aceleração |
 | `walk_speed_kph` | km/h | Velocidade a pé |
 | `transfer_penalty_min` | minutes | Penalidade de baldeação |
+| `traffic_multiplier` | multiplier (e.g. `1.8`) | Multiplicador de tráfego |
 
 ---
 

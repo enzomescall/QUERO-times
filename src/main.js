@@ -135,9 +135,10 @@ function applyNetworkDefaults(network) {
   setInput('express-speed',    sp.expressSpeedKph);
   setInput('express-dwell',    sp.expressDwellTimeS);
   setInput('express-headway',  sp.expressHeadwayMin);
-  setInput('accel',            sp.accelMs2);
-  setInput('walk-speed',       sp.walkSpeedKph);
-  setInput('transfer-penalty', sp.transferPenaltyMin);
+  setInput('accel',              sp.accelMs2);
+  setInput('walk-speed',         sp.walkSpeedKph);
+  setInput('transfer-penalty',   sp.transferPenaltyMin);
+  setInput('traffic-multiplier', sp.trafficMultiplier);
 }
 
 function updateParamVisibility(network) {
@@ -342,9 +343,10 @@ planBtn.addEventListener('click', async () => {
   planBtn.disabled = false;
 
   // Fetch driving comparison concurrently (doesn't block route display)
-  showComparisonLoading(totalS);
+  const trafficMult = parseFloat(document.getElementById('traffic-multiplier').value) || 1.0;
+  showComparisonLoading(totalS, trafficMult);
   fetchDrivingTimeS(originPoint.lat, originPoint.lng, destPoint.lat, destPoint.lng)
-    .then(drivingS => renderComparison(totalS, drivingS))
+    .then(drivingS => renderComparison(totalS, drivingS * trafficMult, trafficMult))
     .catch(() => renderComparisonError());
 });
 
@@ -382,27 +384,33 @@ function renderResults(route, walkOriginS, walkDestS, totalS, oNode, dNode) {
 }
 
 // ── Real-world comparison ──────────────────────────────────────────────────
-function showComparisonLoading(queroTotalS) {
+function showComparisonLoading(queroTotalS, trafficMult) {
   resultComparison.hidden = false;
   cmpQueroTime.textContent = formatDuration(queroTotalS);
   cmpDriveTime.textContent = '...';
+  cmpDriveTime.title = '';
   cmpDelta.textContent = 'Buscando tempo de carro...';
   cmpDelta.className = 'cmp-delta loading';
 }
 
-function renderComparison(queroTotalS, drivingS) {
+function renderComparison(queroTotalS, adjustedDrivingS, trafficMult) {
   cmpQueroTime.textContent = formatDuration(queroTotalS);
-  cmpDriveTime.textContent = formatDuration(drivingS);
-  const deltaS = drivingS - queroTotalS;
+  cmpDriveTime.textContent = formatDuration(adjustedDrivingS);
+  cmpDriveTime.title = trafficMult !== 1.0
+    ? `OSRM sem tráfego × ${trafficMult.toFixed(1)} (multiplicador de tráfego)`
+    : 'Tempo OSRM sem tráfego (×1.0)';
+
+  const trafficLabel = trafficMult !== 1.0 ? ` (×${trafficMult.toFixed(1)} tráfego)` : '';
+  const deltaS = adjustedDrivingS - queroTotalS;
   const absDelta = formatDuration(Math.abs(deltaS));
   if (deltaS > 30) {
-    cmpDelta.textContent = `⚡ ${absDelta} mais rápido que dirigir`;
+    cmpDelta.textContent = `⚡ ${absDelta} mais rápido que dirigir${trafficLabel}`;
     cmpDelta.className = 'cmp-delta faster';
   } else if (deltaS < -30) {
-    cmpDelta.textContent = `🐢 ${absDelta} mais lento que dirigir`;
+    cmpDelta.textContent = `🐢 ${absDelta} mais lento que dirigir${trafficLabel}`;
     cmpDelta.className = 'cmp-delta slower';
   } else {
-    cmpDelta.textContent = 'Tempo similar ao de carro';
+    cmpDelta.textContent = `Tempo similar ao de carro${trafficLabel}`;
     cmpDelta.className = 'cmp-delta neutral';
   }
 }
