@@ -69,12 +69,16 @@ export class MapView {
         if (getStatsForNode) {
           const [lng, lat] = feature.geometry.coordinates;
           marker.on('popupopen', () => {
-            const reachable = getStatsForNode(lat, lng);
-            if (reachable) {
-              marker.getPopup().setContent(
-                stationPopupHtml(name, desc, { ...baseStats, reachable })
-              );
-            }
+            // Defer Dijkstra runs to avoid blocking the UI thread on popup open
+            setTimeout(() => {
+              if (!marker.isPopupOpen()) return;
+              const reachable = getStatsForNode(lat, lng);
+              if (reachable) {
+                marker.getPopup().setContent(
+                  stationPopupHtml(name, desc, { ...baseStats, reachable })
+                );
+              }
+            }, 0);
           });
         }
 

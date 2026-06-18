@@ -89,10 +89,10 @@ function applyTabLayout(tab) {
 async function loadNetwork(tab) {
   if (tab === 'custom') {
     if (networks.custom) {
-      mapView.renderNetwork(geojsons.custom, networks.custom.lineColors, makeStatsCallback(networks.custom, getParams(), activeThresholds));
-      mapView.fitToNetwork(geojsons.custom);
       updateParamVisibility(networks.custom);
       applyNetworkDefaults(networks.custom, 'custom');
+      mapView.renderNetwork(geojsons.custom, networks.custom.lineColors, makeStatsCallback(networks.custom, getParams, activeThresholds));
+      mapView.fitToNetwork(geojsons.custom);
       const n = networks.custom;
       setStatus(`Rede carregada — ${n.nodes.size} estações, ${n.edges.length / 2} segmentos`);
     } else {
@@ -103,10 +103,10 @@ async function loadNetwork(tab) {
   }
 
   if (networks[tab]) {
-    mapView.renderNetwork(geojsons[tab], networks[tab].lineColors, makeStatsCallback(networks[tab], getParams(), activeThresholds));
-    mapView.fitToNetwork(geojsons[tab]);
     updateParamVisibility(networks[tab]);
     applyNetworkDefaults(networks[tab], tab);
+    mapView.renderNetwork(geojsons[tab], networks[tab].lineColors, makeStatsCallback(networks[tab], getParams, activeThresholds));
+    mapView.fitToNetwork(geojsons[tab]);
     const n = networks[tab];
     setStatus(`Rede carregada — ${n.nodes.size} estações, ${n.edges.length / 2} segmentos`);
     return;
@@ -123,10 +123,10 @@ async function loadNetwork(tab) {
     networks[tab] = net;
     geojsons[tab] = geojson;
 
-    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams(), activeThresholds));
-    mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
     applyNetworkDefaults(net, tab);
+    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams, activeThresholds));
+    mapView.fitToNetwork(geojson);
     setStatus(`Rede carregada — ${net.nodes.size} estações, ${net.edges.length / 2} segmentos`);
   } catch (err) {
     setStatus(`Erro ao carregar rede: ${err.message}`, true);
@@ -189,10 +189,10 @@ async function handleGeojsonFile(file) {
 
     // Switch view: hide docs, show map + routing UI
     applyTabLayout('custom');
-    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams(), activeThresholds));
-    mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
     applyNetworkDefaults(net, 'custom');
+    mapView.renderNetwork(geojson, net.lineColors, makeStatsCallback(net, getParams, activeThresholds));
+    mapView.fitToNetwork(geojson);
     setStatus(`Rede carregada — ${net.nodes.size} estações, ${net.edges.length / 2} segmentos`);
   } catch (err) {
     setStatus(`Erro ao ler GeoJSON: ${err.message}`, true);
@@ -381,10 +381,11 @@ reverseBtn.addEventListener('click', () => {
 });
 
 // ── Station stats callback ─────────────────────────────────────────────────
-function makeStatsCallback(network, params, thresholds) {
+function makeStatsCallback(network, getParamsFn, thresholds) {
   return function(lat, lng) {
     const { node } = network.nearestNode(lat, lng);
     if (!node) return null;
+    const params = getParamsFn();
     const result = {};
     for (const min of thresholds) {
       const iso = computeIsochrone(network, node.id, params, min * 60);
