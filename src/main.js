@@ -11,20 +11,20 @@ import { fetchDrivingTimeS } from './compare.js';
 const TAB_CONFIG = {
   metro: {
     geojsonPath:  '/data/network.geojson',
-    title:        'QUERO Transporte',
-    subtitle:     'Planejador de rotas — rede proposta',
+    title:        'Rede QUERO',
+    subtitle:     'Exemplo: rede proposta do Rio metropolitano',
     networkLabel: 'QUERO',
   },
   hsr: {
     geojsonPath:  '/data/hsr-network.geojson',
-    title:        'Alta Velocidade',
-    subtitle:     'Planejador de rotas — TAV proposto',
+    title:        'Rede TAV',
+    subtitle:     'Exemplo: alta velocidade proposta',
     networkLabel: 'TAV',
   },
   custom: {
     geojsonPath:  null,
-    title:        'Rede Personalizada',
-    subtitle:     'Carregue seu próprio GeoJSON',
+    title:        'Rede GeoJSON',
+    subtitle:     'Carregue qualquer rede personalizada',
     networkLabel: 'Rede',
   },
 };
