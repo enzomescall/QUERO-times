@@ -79,6 +79,7 @@ async function loadNetwork(tab) {
       mapView.renderNetwork(geojsons.custom, networks.custom.lineColors);
       mapView.fitToNetwork(geojsons.custom);
       updateParamVisibility(networks.custom);
+      applyNetworkDefaults(networks.custom);
       const n = networks.custom;
       setStatus(`Rede carregada — ${n.nodes.size} estações, ${n.edges.length / 2} segmentos`);
     } else {
@@ -92,6 +93,7 @@ async function loadNetwork(tab) {
     mapView.renderNetwork(geojsons[tab], networks[tab].lineColors);
     mapView.fitToNetwork(geojsons[tab]);
     updateParamVisibility(networks[tab]);
+    applyNetworkDefaults(networks[tab]);
     const n = networks[tab];
     setStatus(`Rede carregada — ${n.nodes.size} estações, ${n.edges.length / 2} segmentos`);
     return;
@@ -111,11 +113,26 @@ async function loadNetwork(tab) {
     mapView.renderNetwork(geojson, net.lineColors);
     mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
+    applyNetworkDefaults(net);
     setStatus(`Rede carregada — ${net.nodes.size} estações, ${net.edges.length / 2} segmentos`);
   } catch (err) {
     setStatus(`Erro ao carregar rede: ${err.message}`, true);
     console.error(err);
   }
+}
+
+function applyNetworkDefaults(network) {
+  const sp = network.suggestedParams;
+  const setInput = (id, val) => { if (val != null) document.getElementById(id).value = val; };
+  setInput('train-speed',      sp.trainSpeedKph);
+  setInput('dwell-time',       sp.dwellTimeS);
+  setInput('headway',          sp.headwayMin);
+  setInput('express-speed',    sp.expressSpeedKph);
+  setInput('express-dwell',    sp.expressDwellTimeS);
+  setInput('express-headway',  sp.expressHeadwayMin);
+  setInput('accel',            sp.accelMs2);
+  setInput('walk-speed',       sp.walkSpeedKph);
+  setInput('transfer-penalty', sp.transferPenaltyMin);
 }
 
 function updateParamVisibility(network) {
@@ -157,6 +174,7 @@ async function handleGeojsonFile(file) {
     mapView.renderNetwork(geojson, net.lineColors);
     mapView.fitToNetwork(geojson);
     updateParamVisibility(net);
+    applyNetworkDefaults(net);
     setStatus(`Rede carregada — ${net.nodes.size} estações, ${net.edges.length / 2} segmentos`);
   } catch (err) {
     setStatus(`Erro ao ler GeoJSON: ${err.message}`, true);

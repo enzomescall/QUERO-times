@@ -33,7 +33,7 @@ export function findRoute(network, originNodeId, destNodeId, params) {
 
     for (const edge of (adj.get(u) ?? [])) {
       const { to, distanceM, lineId } = edge;
-      const lp = paramsForLine(lineId, params, network.lineSpeedOverrides?.get(lineId) ?? null);
+      const lp = paramsForLine(lineId, params);
 
       const isFirstBoarding = currentLine === null;
       const isTransfer = currentLine !== null && lineId !== currentLine;
@@ -122,7 +122,7 @@ function buildSteps(network, path, edgeTrace, params) {
     const nextNode = network.nodes.get(path[i + 1]);
 
     if (i === 0) {
-      const lp = paramsForLine(edge.lineId, params, network.lineSpeedOverrides?.get(edge.lineId) ?? null);
+      const lp = paramsForLine(edge.lineId, params);
       steps.push({
         type: 'wait',
         description: `Aguardar ${lineLabel(edge.lineId)} em ${node.name ?? 'estação de origem'}`,
@@ -153,7 +153,7 @@ function buildSteps(network, path, edgeTrace, params) {
 
       if (!isLastEdge) {
         const nextLineId = edgeTrace[i + 1].edge.lineId;
-        const nextLp = paramsForLine(nextLineId, params, network.lineSpeedOverrides?.get(nextLineId) ?? null);
+        const nextLp = paramsForLine(nextLineId, params);
         steps.push({
           type: 'transfer',
           description: `Baldeação em ${nextNode.name ?? 'estação'} para ${lineLabel(nextLineId)}`,

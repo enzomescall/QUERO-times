@@ -16,11 +16,10 @@ export function isExpressLine(lineId) {
 
 /**
  * Pick the right speed/headway/dwell params for a given line.
- * `speedOverrideKph` — when set, replaces the slider-based speed for this
- * line (comes from the GeoJSON `speed` property on the LineString feature).
+ * Values come from the sidebar inputs (already loaded with GeoJSON defaults).
  */
-export function paramsForLine(lineId, params, speedOverrideKph = null) {
-  const base = isExpressLine(lineId)
+export function paramsForLine(lineId, params) {
+  return isExpressLine(lineId)
     ? {
         trainSpeedKph: params.expressSpeedKph,
         accelMs2:      params.accelMs2,
@@ -33,9 +32,6 @@ export function paramsForLine(lineId, params, speedOverrideKph = null) {
         dwellTimeS:    params.dwellTimeS,
         headwayMin:    params.headwayMin,
       };
-
-  if (speedOverrideKph != null) base.trainSpeedKph = speedOverrideKph;
-  return base;
 }
 
 export function segmentTravelTimeS(distanceM, lineParams) {

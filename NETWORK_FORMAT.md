@@ -6,16 +6,27 @@ This document explains how to structure a GeoJSON file so it works correctly wit
 
 ## File structure
 
-The file must be a valid GeoJSON `FeatureCollection`:
+The file must be a valid GeoJSON `FeatureCollection`. You can also include a top-level `network_defaults` object to set initial sidebar values for the whole network:
 
 ```json
 {
   "type": "FeatureCollection",
+  "network_defaults": {
+    "accel_ms2": 1.0,
+    "walk_speed_kph": 4.5,
+    "transfer_penalty_min": 3
+  },
   "features": [ ... ]
 }
 ```
 
-Place it in `data/` and point the app at it via the `TAB_CONFIG` entry in `src/main.js`.
+All fields in `network_defaults` are optional. When present, they pre-fill the corresponding sidebar sliders when the network loads — the user can still change them freely afterwards.
+
+| Field | Unit | Sidebar slider |
+|---|---|---|
+| `accel_ms2` | m/s² | Aceleração |
+| `walk_speed_kph` | km/h | Velocidade a pé |
+| `transfer_penalty_min` | minutes | Penalidade de baldeação |
 
 ---
 
@@ -77,6 +88,9 @@ Express trains can be grouped under a `**Trens expressos**` heading, but the hea
 ### `linha` (optional, often unreliable)
 Some umap exports set this to the line number for single-line stations, but interchange stations are often tagged `"M"` (multi-line marker). **Do not rely on this field for line membership** — always use `description` instead.
 
+### `populacao_milhoes` / `pib_brl_bilhoes` (optional, HSR networks)
+Population in millions and GDP in BRL billions for the city served by this station. When present, these are displayed in the station popup.
+
 ---
 
 ## Feature type 2 — Track geometry (LineString)
@@ -91,7 +105,9 @@ Each line (or branch of a line) is a `LineString` feature. For branching lines, 
     "linha": "1",
     "stroke": "#ef9600",
     "stroke-width": 3,
-    "stroke-opacity": 1
+    "speed": 80,
+    "dwell_s": 30,
+    "headway_min": 5
   },
   "geometry": {
     "type": "LineString",
@@ -116,19 +132,53 @@ This value is what the router uses to detect line changes (and therefore transfe
 Hex color for this line, e.g. `"#ef9600"`. Used when rendering the network on the map. If absent, the color falls back to whatever was parsed from station descriptions for the same `linha` id, then to a default green.
 
 ### `speed` (optional)
-Design speed of this line in **km/h**. When present, it overrides the speed slider in the sidebar for every edge on this line — the slider value is only used as a fallback for lines without a `speed` property.
+Design speed of this line in **km/h**. When present on the first `LineString` of each type (metro or express), this value pre-fills the corresponding speed slider in the sidebar. The user can override it after load.
 
 ```json
 "properties": { "linha": "1", "stroke": "#e63946", "speed": 300 }
 ```
 
-Use this for networks where lines run at significantly different speeds (e.g., a mixed HSR + regional rail network where some lines cap at 160 km/h and others run at 350 km/h). Lines that share a `linha` id always get the same speed; if multiple `LineString` features share the same `linha`, the last one encountered wins.
+### `dwell_s` (optional)
+Station dwell time in **seconds** — how long the train waits at each stop. Pre-fills the *Tempo de parada* sidebar slider on load.
+
+```json
+"properties": { "linha": "1", "dwell_s": 30 }
+```
+
+### `headway_min` (optional)
+Service frequency in **minutes** (time between trains). Pre-fills the *Frequência* sidebar slider on load. Expected wait at any station is `headway_min / 2`.
+
+```json
+"properties": { "linha": "1", "headway_min": 5 }
+```
+
+For networks with both metro and express lines, the first `LineString` of each type (lettered vs. numbered) to declare these properties sets the default for its category.
 
 ### `linha-ramal` (optional)
 Branch identifier for lines with multiple ramais (e.g. `"A1"`, `"A2"`). Not used by the router today but preserved for future filtering by branch.
 
 ### `name` (optional)
 Human-readable line name, e.g. `"Linha A :: Ramal Muriqui"`. Not used by the router.
+
+---
+
+## Sidebar defaults — how GeoJSON values become editable defaults
+
+When a network loads, the app reads `network_defaults` from the `FeatureCollection` and `speed`, `dwell_s`, `headway_min` from `LineString` features. These values are pushed into the sidebar sliders as starting values. The sidebar remains the single source of truth for every route calculation — you can change any slider at any time without reloading the network.
+
+Only the first `LineString` of each type (metro / express) that declares a given property is used; subsequent `LineString` features on the same type are ignored for defaults.
+
+| GeoJSON field | Applies to | Sidebar input |
+|---|---|---|
+| `network_defaults.accel_ms2` | Both | Aceleração (m/s²) |
+| `network_defaults.walk_speed_kph` | Both | Velocidade a pé (km/h) |
+| `network_defaults.transfer_penalty_min` | Both | Penalidade de baldeação (min) |
+| `speed` on numeric `LineString` | Metro | Velocidade máxima — metro |
+| `dwell_s` on numeric `LineString` | Metro | Tempo de parada — metro |
+| `headway_min` on numeric `LineString` | Metro | Frequência — metro |
+| `speed` on lettered `LineString` | Express | Velocidade máxima — expresso |
+| `dwell_s` on lettered `LineString` | Express | Tempo de parada — expresso |
+| `headway_min` on lettered `LineString` | Express | Frequência — expresso |
 
 ---
 
@@ -157,8 +207,6 @@ The sidebar automatically hides irrelevant panels when a network loads:
 - Only lettered lines present → the *Linhas metropolitanas* panel is hidden.
 - Both present, or neither (custom IDs) → both panels are shown.
 
-The `speed` property on a `LineString` takes priority over both panels: if a line declares `"speed": 350`, that value is always used regardless of the slider.
-
 If your network has a different express/regular split, you can adjust the `isExpressLine()` function in `src/simulation.js`.
 
 ---
@@ -180,6 +228,11 @@ A two-station, one-line network that will route correctly:
 ```json
 {
   "type": "FeatureCollection",
+  "network_defaults": {
+    "accel_ms2": 1.0,
+    "walk_speed_kph": 4.5,
+    "transfer_penalty_min": 3
+  },
   "features": [
     {
       "type": "Feature",
@@ -199,7 +252,13 @@ A two-station, one-line network that will route correctly:
     },
     {
       "type": "Feature",
-      "properties": { "linha": "1", "stroke": "#e63946" },
+      "properties": {
+        "linha": "1",
+        "stroke": "#e63946",
+        "speed": 80,
+        "dwell_s": 30,
+        "headway_min": 5
+      },
       "geometry": {
         "type": "LineString",
         "coordinates": [

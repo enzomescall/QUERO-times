@@ -25,10 +25,29 @@ const EXPRESS_LINE_RE = /^[A-Ea-e]$/; // lettered lines are express
 
 export class TransitNetwork {
   constructor() {
-    this.nodes = new Map();           // id -> { id, lat, lng, name, lines: Set<string> }
-    this.edges = [];                  // { from, to, distanceM, lineId, lineColor, coords }
-    this.lineColors = new Map();      // lineId -> hex color
-    this.lineSpeedOverrides = new Map(); // lineId -> speedKph (from GeoJSON `speed` property)
+    this.nodes = new Map();      // id -> { id, lat, lng, name, lines: Set<string> }
+    this.edges = [];             // { from, to, distanceM, lineId, lineColor, coords }
+    this.lineColors = new Map(); // lineId -> hex color
+
+    /**
+     * Suggested sidebar defaults extracted from the GeoJSON.
+     * Null fields mean "no suggestion — keep current slider value."
+     * Per-line fields (speed, dwell, headway) use the first LineString
+     * of each type (metro / express) that declares the property.
+     * Global fields come from `network_defaults` on the FeatureCollection.
+     */
+    this.suggestedParams = {
+      trainSpeedKph:      null,
+      dwellTimeS:         null,
+      headwayMin:         null,
+      expressSpeedKph:    null,
+      expressDwellTimeS:  null,
+      expressHeadwayMin:  null,
+      accelMs2:           null,
+      walkSpeedKph:       null,
+      transferPenaltyMin: null,
+    };
+
     this._hasMetroLines   = false;
     this._hasExpressLines = false;
     this._nextId = 0;
@@ -45,7 +64,7 @@ export class TransitNetwork {
   /** Load and parse a GeoJSON FeatureCollection. Returns `this`. */
   loadGeoJSON(geojson) {
     const stationFeatures = [];
-    const lineFeatures = [];
+    const lineFeatures    = [];
 
     for (const feature of geojson.features ?? []) {
       const t = feature.geometry?.type;
@@ -53,41 +72,46 @@ export class TransitNetwork {
       else if (t === 'LineString' || t === 'MultiLineString') lineFeatures.push(feature);
     }
 
-    // Pass 1 — station nodes
+    // ── Global defaults from FeatureCollection top-level ──────────────────
+    // e.g. "network_defaults": { "accel_ms2": 1.3, "walk_speed_kph": 5, ... }
+    const nd  = geojson.network_defaults ?? {};
+    const num = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+    if (nd.accel_ms2            != null) this.suggestedParams.accelMs2          = num(nd.accel_ms2);
+    if (nd.walk_speed_kph       != null) this.suggestedParams.walkSpeedKph      = num(nd.walk_speed_kph);
+    if (nd.transfer_penalty_min != null) this.suggestedParams.transferPenaltyMin = num(nd.transfer_penalty_min);
+
+    // ── Pass 1 — station nodes ────────────────────────────────────────────
     for (const f of stationFeatures) {
       const [lng, lat] = f.geometry.coordinates;
-      const name = f.properties?.name ?? null;
-      const node = this._getOrCreateNode(lat, lng, name);
-
+      const node = this._getOrCreateNode(lat, lng, f.properties?.name ?? null);
       const { lines, colors } = parseDescriptionLines(f.properties?.description ?? '');
       for (const lineId of lines) node.lines.add(lineId);
-
-      // Collect line colors from station descriptions (span background-color)
       for (const [lineId, color] of colors) {
         if (!this.lineColors.has(lineId)) this.lineColors.set(lineId, color);
       }
     }
 
-    // Pass 2 — track edges
+    // ── Pass 2 — track edges ──────────────────────────────────────────────
     for (const f of lineFeatures) {
       const lineId    = String(f.properties?.linha ?? f.properties?.name ?? 'unknown');
-      const lineColor = f.properties?.stroke
-        ?? this.lineColors.get(lineId)
-        ?? '#0a7a3c';
+      const lineColor = f.properties?.stroke ?? this.lineColors.get(lineId) ?? '#0a7a3c';
+      const p         = f.properties ?? {};
 
-      if (f.properties?.stroke && !this.lineColors.has(lineId)) {
-        this.lineColors.set(lineId, f.properties.stroke);
+      if (p.stroke && !this.lineColors.has(lineId)) this.lineColors.set(lineId, p.stroke);
+
+      // Collect per-line param suggestions; first LineString of each type wins.
+      const isExpress = EXPRESS_LINE_RE.test(lineId);
+      if (isExpress) {
+        this._hasExpressLines = true;
+        if (this.suggestedParams.expressSpeedKph   == null) this.suggestedParams.expressSpeedKph   = num(p.speed);
+        if (this.suggestedParams.expressDwellTimeS == null) this.suggestedParams.expressDwellTimeS = num(p.dwell_s);
+        if (this.suggestedParams.expressHeadwayMin == null) this.suggestedParams.expressHeadwayMin = num(p.headway_min);
+      } else {
+        this._hasMetroLines = true;
+        if (this.suggestedParams.trainSpeedKph == null) this.suggestedParams.trainSpeedKph = num(p.speed);
+        if (this.suggestedParams.dwellTimeS    == null) this.suggestedParams.dwellTimeS    = num(p.dwell_s);
+        if (this.suggestedParams.headwayMin    == null) this.suggestedParams.headwayMin    = num(p.headway_min);
       }
-
-      // Per-line design speed from GeoJSON overrides the sidebar slider
-      const speedKph = f.properties?.speed != null ? parseFloat(f.properties.speed) : null;
-      if (speedKph != null && !isNaN(speedKph)) {
-        this.lineSpeedOverrides.set(lineId, speedKph);
-      }
-
-      // Track which broad categories are present (drives param-panel visibility)
-      if (EXPRESS_LINE_RE.test(lineId)) this._hasExpressLines = true;
-      else this._hasMetroLines = true;
 
       const allCoords = f.geometry.type === 'LineString'
         ? f.geometry.coordinates
