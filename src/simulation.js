@@ -10,40 +10,42 @@
  */
 
 /** Express lines use lettered identifiers (A–E). */
-function isExpressLine(lineId) {
+export function isExpressLine(lineId) {
   return /^[A-Ea-e]$/.test(String(lineId));
 }
 
 /**
  * Pick the right speed/headway/dwell params for a given line.
- * Returns a sub-object compatible with `segmentTravelTimeS`.
+ * `speedOverrideKph` — when set, replaces the slider-based speed for this
+ * line (comes from the GeoJSON `speed` property on the LineString feature).
  */
-export function paramsForLine(lineId, params) {
-  if (isExpressLine(lineId)) {
-    return {
-      trainSpeedKph: params.expressSpeedKph,
-      accelMs2:      params.accelMs2,
-      dwellTimeS:    params.expressDwellTimeS,
-      headwayMin:    params.expressHeadwayMin,
-    };
-  }
-  return {
-    trainSpeedKph: params.trainSpeedKph,
-    accelMs2:      params.accelMs2,
-    dwellTimeS:    params.dwellTimeS,
-    headwayMin:    params.headwayMin,
-  };
+export function paramsForLine(lineId, params, speedOverrideKph = null) {
+  const base = isExpressLine(lineId)
+    ? {
+        trainSpeedKph: params.expressSpeedKph,
+        accelMs2:      params.accelMs2,
+        dwellTimeS:    params.expressDwellTimeS,
+        headwayMin:    params.expressHeadwayMin,
+      }
+    : {
+        trainSpeedKph: params.trainSpeedKph,
+        accelMs2:      params.accelMs2,
+        dwellTimeS:    params.dwellTimeS,
+        headwayMin:    params.headwayMin,
+      };
+
+  if (speedOverrideKph != null) base.trainSpeedKph = speedOverrideKph;
+  return base;
 }
 
 export function segmentTravelTimeS(distanceM, lineParams) {
   const { trainSpeedKph, accelMs2 } = lineParams;
   const vMax = trainSpeedKph / 3.6; // m/s
 
-  const accelDist    = (vMax * vMax) / (2 * accelMs2);
+  const accelDist      = (vMax * vMax) / (2 * accelMs2);
   const totalAccelDist = 2 * accelDist;
 
   if (distanceM <= totalAccelDist) {
-    // Triangle profile — never reaches cruise speed
     const peakV = Math.sqrt(distanceM * accelMs2);
     return 2 * (peakV / accelMs2);
   }

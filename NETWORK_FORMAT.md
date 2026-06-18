@@ -115,6 +115,15 @@ This value is what the router uses to detect line changes (and therefore transfe
 ### `stroke` (required for correct colors)
 Hex color for this line, e.g. `"#ef9600"`. Used when rendering the network on the map. If absent, the color falls back to whatever was parsed from station descriptions for the same `linha` id, then to a default green.
 
+### `speed` (optional)
+Design speed of this line in **km/h**. When present, it overrides the speed slider in the sidebar for every edge on this line — the slider value is only used as a fallback for lines without a `speed` property.
+
+```json
+"properties": { "linha": "1", "stroke": "#e63946", "speed": 300 }
+```
+
+Use this for networks where lines run at significantly different speeds (e.g., a mixed HSR + regional rail network where some lines cap at 160 km/h and others run at 350 km/h). Lines that share a `linha` id always get the same speed; if multiple `LineString` features share the same `linha`, the last one encountered wins.
+
 ### `linha-ramal` (optional)
 Branch identifier for lines with multiple ramais (e.g. `"A1"`, `"A2"`). Not used by the router today but preserved for future filtering by branch.
 
@@ -142,6 +151,13 @@ Two lines connect if they share a station node (i.e., there is a `Point` feature
 ## Express vs. regular lines
 
 Lines identified by a letter (`A`–`E`) are treated as **express** lines by the simulation engine and use separate speed, dwell time, and headway parameters (configurable in the sidebar). All other lines use the regular metro parameters.
+
+The sidebar automatically hides irrelevant panels when a network loads:
+- Only numbered lines present → the *Trens expressos* panel is hidden.
+- Only lettered lines present → the *Linhas metropolitanas* panel is hidden.
+- Both present, or neither (custom IDs) → both panels are shown.
+
+The `speed` property on a `LineString` takes priority over both panels: if a line declares `"speed": 350`, that value is always used regardless of the slider.
 
 If your network has a different express/regular split, you can adjust the `isExpressLine()` function in `src/simulation.js`.
 

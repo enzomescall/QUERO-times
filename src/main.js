@@ -46,6 +46,7 @@ async function loadNetwork(tab) {
   if (networks[tab]) {
     mapView.renderNetwork(geojsons[tab], networks[tab].lineColors);
     mapView.fitToNetwork(geojsons[tab]);
+    updateParamVisibility(networks[tab]);
     const n = networks[tab];
     setStatus(`Rede carregada — ${n.nodes.size} estações, ${n.edges.length / 2} segmentos`);
     return;
@@ -65,11 +66,24 @@ async function loadNetwork(tab) {
 
     mapView.renderNetwork(geojson, net.lineColors);
     mapView.fitToNetwork(geojson);
+    updateParamVisibility(net);
     setStatus(`Rede carregada — ${net.nodes.size} estações, ${net.edges.length / 2} segmentos`);
   } catch (err) {
     setStatus(`Erro ao carregar rede: ${err.message}`, true);
     console.error(err);
   }
+}
+
+/**
+ * Show only the param sections that are relevant for the loaded network.
+ * If the network uses only numbered lines, hide the express panel (and vice
+ * versa). If it uses both — or neither (unknown custom IDs) — show both.
+ */
+function updateParamVisibility(network) {
+  const { hasMetro, hasExpress } = network.lineTypes;
+  const showBoth = !hasMetro && !hasExpress; // custom/unknown line ids → show everything
+  document.getElementById('metro-params').hidden  = !showBoth && !hasMetro;
+  document.getElementById('express-params').hidden = !showBoth && !hasExpress;
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────

@@ -19,15 +19,27 @@
  *            into per-station-pair edges, which is what the router needs.
  */
 
-const STATION_SNAP_M = 300; // station Points vs LineString coords — umap placement can drift
-const NODE_MERGE_M   = 50;  // merge duplicate nodes that are very close together
+const STATION_SNAP_M  = 300; // station Points vs LineString coords — umap placement can drift
+const NODE_MERGE_M    = 50;  // merge duplicate nodes that are very close together
+const EXPRESS_LINE_RE = /^[A-Ea-e]$/; // lettered lines are express
 
 export class TransitNetwork {
   constructor() {
-    this.nodes = new Map();  // id -> { id, lat, lng, name, lines: Set<string> }
-    this.edges = [];         // { from, to, distanceM, lineId, lineColor }
-    this.lineColors = new Map(); // lineId -> hex color (extracted from description spans)
+    this.nodes = new Map();           // id -> { id, lat, lng, name, lines: Set<string> }
+    this.edges = [];                  // { from, to, distanceM, lineId, lineColor, coords }
+    this.lineColors = new Map();      // lineId -> hex color
+    this.lineSpeedOverrides = new Map(); // lineId -> speedKph (from GeoJSON `speed` property)
+    this._hasMetroLines   = false;
+    this._hasExpressLines = false;
     this._nextId = 0;
+  }
+
+  /** Which broad line categories are present in this network. */
+  get lineTypes() {
+    return {
+      hasMetro:   this._hasMetroLines,
+      hasExpress: this._hasExpressLines,
+    };
   }
 
   /** Load and parse a GeoJSON FeatureCollection. Returns `this`. */
@@ -63,14 +75,23 @@ export class TransitNetwork {
         ?? this.lineColors.get(lineId)
         ?? '#0a7a3c';
 
-      // Store color discovered from LineString stroke property too
       if (f.properties?.stroke && !this.lineColors.has(lineId)) {
         this.lineColors.set(lineId, f.properties.stroke);
       }
 
+      // Per-line design speed from GeoJSON overrides the sidebar slider
+      const speedKph = f.properties?.speed != null ? parseFloat(f.properties.speed) : null;
+      if (speedKph != null && !isNaN(speedKph)) {
+        this.lineSpeedOverrides.set(lineId, speedKph);
+      }
+
+      // Track which broad categories are present (drives param-panel visibility)
+      if (EXPRESS_LINE_RE.test(lineId)) this._hasExpressLines = true;
+      else this._hasMetroLines = true;
+
       const allCoords = f.geometry.type === 'LineString'
         ? f.geometry.coordinates
-        : f.geometry.coordinates.flat(); // MultiLineString — flatten into one path
+        : f.geometry.coordinates.flat();
 
       this._processLineSegment(allCoords, lineId, lineColor);
     }
