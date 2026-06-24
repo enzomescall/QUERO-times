@@ -48,6 +48,33 @@ body {
   gap: 0;
 }
 
+#sidebar-toggle {
+  position: fixed;
+  bottom: 12px;
+  left: calc(var(--sidebar-w) + 12px);
+  z-index: 1200;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--brand);
+  border: 1.5px solid var(--brand);
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#sidebar-toggle:hover { background: white; }
+
+#app.sidebar-collapsed #sidebar { display: none; }
+
+#app.sidebar-collapsed #sidebar-toggle { left: 12px; }
+
+#app.sidebar-collapsed #map,
+#app.sidebar-collapsed #docs-panel {
+  height: 100dvh;
+}
+
 header {
   padding: 20px 20px 16px;
   background: var(--brand);
@@ -644,6 +671,18 @@ details .param:last-child { margin-bottom: 0; }
     box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
   }
   #map, #docs-panel { height: 45dvh; order: 1; }
+  #sidebar-toggle {
+    top: calc(45dvh - 44px);
+    bottom: auto;
+    left: 12px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  #app.sidebar-collapsed #sidebar-toggle { top: auto; bottom: 12px; }
+  #app.sidebar-collapsed #map,
+  #app.sidebar-collapsed #docs-panel {
+    height: 100dvh;
+  }
   header { padding: 12px 16px 10px; }
   header h1 { font-size: 18px; }
   #tab-bar .tab { font-size: 11px; padding: 8px 4px; }

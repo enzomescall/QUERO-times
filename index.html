@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simulador de Redes de Transporte</title>
-    <meta name="description" content="Planeje rotas, compare tempos e teste redes de transporte a partir de arquivos GeoJSON — incluindo QUERO, TAV ou redes personalizadas." />
-    <meta property="og:title" content="Simulador de Redes de Transporte" />
+    <title>Laboratório de Redes de Transporte</title>
+    <meta name="description" content="Simule rotas, tempos, isócronas e comparações em redes de transporte GeoJSON — incluindo QUERO, TAV ou redes personalizadas." />
+    <meta property="og:title" content="Laboratório de Redes de Transporte" />
     <meta property="og:description" content="Planejador interativo para redes de transporte em GeoJSON: rotas, tempos, isócronas e comparação com carro." />
     <meta property="og:type" content="website" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
@@ -16,8 +16,8 @@
     <div id="app">
       <aside id="sidebar">
         <header>
-          <h1 id="header-title">Rede <span>QUERO</span></h1>
-          <p class="subtitle" id="header-subtitle">Exemplo: rede proposta do Rio metropolitano</p>
+          <h1 id="header-title">Laboratório <span>de Redes</span></h1>
+          <p class="subtitle" id="header-subtitle">Exemplo QUERO: rede proposta do Rio metropolitano</p>
           <a id="header-source-link" class="header-source" target="_blank" rel="noopener noreferrer" hidden></a>
         </header>
 
@@ -64,7 +64,7 @@
         </section>
 
         <section id="params-section">
-          <details id="metro-params" open>
+          <details id="metro-params">
             <summary><h2>Linhas metropolitanas <span class="badge-metro">1–12</span></h2></summary>
             <div class="param">
               <label for="train-speed">Velocidade máxima <span>(km/h)</span></label>
@@ -80,7 +80,7 @@
             </div>
           </details>
 
-          <details id="express-params" open>
+          <details id="express-params">
             <summary><h2>Trens expressos <span class="badge-express">A–E</span></h2></summary>
             <div class="param">
               <label for="express-speed">Velocidade máxima <span>(km/h)</span></label>
@@ -96,7 +96,7 @@
             </div>
           </details>
 
-          <details id="isochrone-params" open>
+          <details id="isochrone-params">
             <summary><h2>Isócrona</h2></summary>
             <div class="param">
               <label for="iso-time">Tempo máximo <span>(min)</span></label>
@@ -159,6 +159,8 @@
           <span id="status-msg">Carregando rede...</span>
         </section>
       </aside>
+
+      <button id="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true">Ocultar painel</button>
 
       <!-- Map and docs panel share the same flex slot; only one is visible at a time -->
       <div id="map"></div>

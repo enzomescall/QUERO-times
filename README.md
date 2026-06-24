@@ -1,4 +1,4 @@
-# Simulador de Redes de Transporte
+# Laboratório de Redes de Transporte
 
 Proof-of-concept journey time planner for the **QUERO** expanded metro and rail network proposal for the Rio de Janeiro metropolitan area.
 

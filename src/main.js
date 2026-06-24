@@ -11,20 +11,20 @@ import { fetchDrivingTimeS } from './compare.js';
 const TAB_CONFIG = {
   metro: {
     geojsonPath:  `${import.meta.env.BASE_URL}data/network.geojson`,
-    title:        'Rede QUERO',
-    subtitle:     'Exemplo: rede proposta do Rio metropolitano',
+    title:        'Laboratório de Redes',
+    subtitle:     'Exemplo QUERO: rede proposta do Rio metropolitano',
     networkLabel: 'QUERO',
   },
   hsr: {
     geojsonPath:  `${import.meta.env.BASE_URL}data/hsr-network.geojson`,
-    title:        'Rede TAV',
-    subtitle:     'Exemplo: alta velocidade proposta',
+    title:        'Laboratório de Redes',
+    subtitle:     'Exemplo TAV: alta velocidade proposta',
     networkLabel: 'TAV',
   },
   custom: {
     geojsonPath:  null,
-    title:        'Rede GeoJSON',
-    subtitle:     'Carregue qualquer rede personalizada',
+    title:        'Laboratório de Redes',
+    subtitle:     'Carregue qualquer rede GeoJSON personalizada',
     networkLabel: 'Rede',
   },
 };
@@ -70,6 +70,7 @@ const errorModalClose = document.getElementById('error-modal-close');
 const mapEl          = document.getElementById('map');
 const docsPanel      = document.getElementById('docs-panel');
 const docsContent    = document.getElementById('docs-content');
+const sidebarToggle  = document.getElementById('sidebar-toggle');
 
 // ── Layout helper ──────────────────────────────────────────────────────────
 /**
@@ -88,6 +89,17 @@ function applyTabLayout(tab) {
   // Leaflet loses its dimensions when its container is hidden; recalc on show.
   if (!isCustomEmpty) requestAnimationFrame(() => mapView?.map.invalidateSize());
 }
+
+function setSidebarCollapsed(collapsed) {
+  appEl.classList.toggle('sidebar-collapsed', collapsed);
+  sidebarToggle.textContent = collapsed ? 'Mostrar painel' : 'Ocultar painel';
+  sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  requestAnimationFrame(() => mapView?.map.invalidateSize());
+}
+
+sidebarToggle.addEventListener('click', () => {
+  setSidebarCollapsed(!appEl.classList.contains('sidebar-collapsed'));
+});
 
 // ── Network loading ────────────────────────────────────────────────────────
 async function loadNetwork(tab) {

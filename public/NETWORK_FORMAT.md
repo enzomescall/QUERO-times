@@ -1,6 +1,6 @@
 # Formato GeoJSON de Rede
 
-Este documento explica como estruturar um arquivo GeoJSON para que funcione corretamente com o Simulador de Redes de Transporte. O aplicativo lê dois tipos de features: **pontos de estação** e **linhas de trilho**.
+Este documento explica como estruturar um arquivo GeoJSON para que funcione corretamente com o Laboratório de Redes de Transporte. O aplicativo lê dois tipos de features: **pontos de estação** e **linhas de trilho**.
 
 ---
 
